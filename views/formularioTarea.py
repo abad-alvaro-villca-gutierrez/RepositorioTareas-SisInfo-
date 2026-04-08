@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import messagebox
-
 import sys
 import os
 
@@ -8,7 +7,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # 2. Importamos la función apuntando a la carpeta correcta
-# Asumiendo que pusiste la función dentro de conexion_bd.py:
 from config.conexion_bd import guardar_tarea
 
 def procesar_formulario():
@@ -49,43 +47,47 @@ def limpiar_campos():
     entry_fecha.delete(0, tk.END)
 
 # ==========================================
-# DISEÑO DE LA INTERFAZ GRÁFICA
+# DISEÑO DE LA INTERFAZ GRÁFICA (SUB-VENTANA)
 # ==========================================
 
-# Crear la ventana principal
-ventana = tk.Tk()
-ventana.title("Repositorio de Tareas - Panel Docente")
-ventana.geometry("400x500")
-ventana.configure(padx=20, pady=20)
+def abrir_formulario_tarea():
+    """Función que dibuja y abre la ventana del formulario"""
+    
+    # Declarar variables globales para que procesar_formulario pueda leerlas
+    global entry_titulo, text_descripcion, entry_puntaje, entry_fecha
 
-# Título Principal
-label_titulo_ventana = tk.Label(ventana, text="Crear Nueva Tarea", font=("Arial", 16, "bold"))
-label_titulo_ventana.pack(pady=(0, 15))
+    # Crear la ventana secundaria (Hija de main.py)
+    ventana = tk.Toplevel()
+    ventana.title("Repositorio de Tareas - Panel Docente")
+    ventana.geometry("400x500")
+    ventana.configure(padx=20, pady=20)
+    
+    # Obliga a que esta ventana se mantenga por encima del Dashboard principal
+    ventana.grab_set()
 
-# Campo: Título de la Tarea
-tk.Label(ventana, text="Título de la tarea *:").pack(anchor="w")
-entry_titulo = tk.Entry(ventana, width=40)
-entry_titulo.pack(pady=(0, 10))
+    # Título Principal
+    tk.Label(ventana, text="Crear Nueva Tarea", font=("Arial", 16, "bold")).pack(pady=(0, 15))
 
-# Campo: Descripción
-tk.Label(ventana, text="Descripción:").pack(anchor="w")
-text_descripcion = tk.Text(ventana, width=40, height=8)
-text_descripcion.pack(pady=(0, 10))
+    # Campo: Título de la Tarea
+    tk.Label(ventana, text="Título de la tarea *:").pack(anchor="w")
+    entry_titulo = tk.Entry(ventana, width=40)
+    entry_titulo.pack(pady=(0, 10))
 
-# Campo: Puntaje
-tk.Label(ventana, text="Puntaje Máximo *:").pack(anchor="w")
-entry_puntaje = tk.Entry(ventana, width=40)
-entry_puntaje.pack(pady=(0, 10))
+    # Campo: Descripción
+    tk.Label(ventana, text="Descripción:").pack(anchor="w")
+    text_descripcion = tk.Text(ventana, width=40, height=8)
+    text_descripcion.pack(pady=(0, 10))
 
-# Campo: Fecha de Vencimiento
-tk.Label(ventana, text="Fecha límite (YYYY-MM-DD) *:").pack(anchor="w")
-entry_fecha = tk.Entry(ventana, width=40)
-entry_fecha.pack(pady=(0, 20))
+    # Campo: Puntaje
+    tk.Label(ventana, text="Puntaje Máximo *:").pack(anchor="w")
+    entry_puntaje = tk.Entry(ventana, width=40)
+    entry_puntaje.pack(pady=(0, 10))
 
-# Botón Guardar
-boton_guardar = tk.Button(ventana, text="Guardar Tarea", bg="green", fg="white", font=("Arial", 10, "bold"), command=procesar_formulario)
-boton_guardar.pack(fill="x", pady=10)
+    # Campo: Fecha de Vencimiento
+    tk.Label(ventana, text="Fecha límite (YYYY-MM-DD) *:").pack(anchor="w")
+    entry_fecha = tk.Entry(ventana, width=40)
+    entry_fecha.pack(pady=(0, 20))
 
-# Iniciar la aplicación
-if __name__ == "__main__":
-    ventana.mainloop()
+    # Botón Guardar
+    boton_guardar = tk.Button(ventana, text="Guardar Tarea", bg="green", fg="white", font=("Arial", 10, "bold"), command=procesar_formulario)
+    boton_guardar.pack(fill="x", pady=10)
