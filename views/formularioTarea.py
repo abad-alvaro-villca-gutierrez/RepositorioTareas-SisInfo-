@@ -8,37 +8,44 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # 2. Importamos la función apuntando a la carpeta correcta
 from config.conexion_bd import guardar_tarea
+from controllers.tarea_controladores import validar_tarea
 
 def procesar_formulario():
     """Esta función se ejecuta al hacer clic en el botón Guardar"""
-    # 1. Obtener los datos escritos por el usuario
-    titulo = entry_titulo.get()
+    # 1. Obtener datos (usamos .strip() para limpiar espacios vacíos)
+    titulo = entry_titulo.get().strip()
     descripcion = text_descripcion.get("1.0", tk.END).strip()
-    puntaje = entry_puntaje.get()
-    fecha = entry_fecha.get()
+    puntaje = entry_puntaje.get().strip()
+    fecha = entry_fecha.get().strip()
 
-    # 2. Validaciones básicas (Reglas de negocio)
-    if not titulo or not puntaje or not fecha:
-        messagebox.showwarning("Campos vacíos", "Por favor, llena todos los campos obligatorios.")
-        return
-    
-    if not puntaje.isdigit():
-        messagebox.showerror("Error", "El puntaje debe ser un número entero (ej. 100).")
-        return
+    # 2. VALIDACIÓN: Invocamos la lógica de integridad y cronograma
+    # Esta es la parte que conecta con el controlador
+    es_valido, mensaje = validar_tarea(titulo, fecha, puntaje)
 
-    # 3. Guardar en la Base de Datos
-    puntaje_int = int(puntaje)
-    
-    # Llamamos a tu función, usando 'Publicada' como estado por defecto
-    exito = guardar_tarea(titulo, descripcion, puntaje_int, fecha, estado="Publicada")
+    if not es_valido:
+        # Si algo está mal, mostramos el error y DETENEMOS el proceso con 'return'
+        messagebox.showwarning("Error de Validación", mensaje)
+        return 
 
-    # 4. Dar retroalimentación al usuario
-    if exito:
-        messagebox.showinfo("Éxito", "¡La tarea se guardó correctamente en la base de datos!")
-        limpiar_campos()
-    else:
-        messagebox.showerror("Error de BD", "Hubo un problema al guardar. Revisa la consola para más detalles.")
+    # 3. PROCESAMIENTO Y GUARDADO (Solo ocurre si pasó la validación)
+    try:
+        # Convertimos el puntaje a entero ahora que sabemos que es válido
+        puntaje_int = int(puntaje)
+        
+        # Guardamos en la Base de Datos
+        exito = guardar_tarea(titulo, descripcion, puntaje_int, fecha, estado="Publicada")
 
+        # 4. Dar retroalimentación al usuario
+        if exito:
+            messagebox.showinfo("Éxito", "¡La tarea se guardó correctamente!")
+            limpiar_campos() # Borra el formulario para una nueva tarea
+        else:
+            messagebox.showerror("Error de BD", "Hubo un problema al guardar en la base de datos.")
+            
+    except Exception as e:
+        # Por si ocurre un error inesperado (ej. la BD está desconectada)
+        messagebox.showerror("Error Crítico", f"Ocurrió un error inesperado: {e}")
+        
 def limpiar_campos():
     """Limpia el formulario después de guardar"""
     entry_titulo.delete(0, tk.END)

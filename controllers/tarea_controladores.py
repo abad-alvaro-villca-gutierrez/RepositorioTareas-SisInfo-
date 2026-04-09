@@ -11,9 +11,9 @@ def validar_tarea(nombre, fecha_vencimiento, puntaje):
         if fecha_dt.date() < datetime.now().date():
             return False, "La fecha no puede ser anterior a la actual."
     except ValueError:
-        return False, "Formato de fecha inválido."
+        return False, "Formato de fecha inválido. Use YYYY-MM-DD"
 
-    if int(puntaje) <= 0:
-        return False, "El puntaje debe ser mayor a 0."
+    if not str(puntaje).isdigit() or int(puntaje) <= 0:
+        return False, "El puntaje debe ser un número mayor a 0."
 
     return True, "Validación exitosa"
