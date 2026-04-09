@@ -1,6 +1,7 @@
 import tkinter as tk
 from docenteView import abrir_panel_docente
 from alumnoView import abrir_panel_alumno
+from lista_tareas_sistema import abrir_lista_tareas
 
 def iniciar_app():
     ventana_principal = tk.Tk()
@@ -30,6 +31,8 @@ def iniciar_app():
     # Contenedor para las dos opciones (Docente y Estudiante)
     frame_opciones = tk.Frame(ventana_principal, bg="#f0f2f5")
     frame_opciones.pack(expand=True)
+    
+      
 
     # --- SECCIÓN DOCENTE ---
     frame_docente = tk.Frame(frame_opciones, bg="white", padx=40, pady=40, highlightbackground="#d1d1d1", highlightthickness=1)
@@ -76,6 +79,18 @@ def iniciar_app():
         command=abrir_panel_alumno
     )
     btn_estudiante.pack(pady=10)
+    
+    
+    # BOTON VER TAREAS ORDENADAS
+    btn_lista = tk.Button(
+    ventana_principal,
+    text="📋 VER TAREAS ",
+    bg="blue",
+    fg="white",
+    font=("Arial", 12, "bold"),
+    command=abrir_lista_tareas
+    )
+    btn_lista.pack(pady=10)
 
     # Botón Salir en la parte inferior
     btn_salir = tk.Button(
