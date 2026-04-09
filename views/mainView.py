@@ -1,6 +1,6 @@
 import tkinter as tk
-from formularioTarea import abrir_formulario_tarea
-from entregaEstudiante import abrir_vista_entrega_estudiante
+from docenteView import abrir_panel_docente
+from alumnoView import abrir_panel_alumno
 
 def iniciar_app():
     ventana_principal = tk.Tk()
@@ -50,7 +50,7 @@ def iniciar_app():
         pady=10,
         cursor="hand2",
         relief="flat",
-        command=abrir_formulario_tarea
+        command=abrir_panel_docente
     )
     btn_docente.pack(pady=10)
 
@@ -73,7 +73,7 @@ def iniciar_app():
         pady=10,
         cursor="hand2",
         relief="flat",
-        command=abrir_vista_entrega_estudiante
+        command=abrir_panel_alumno
     )
     btn_estudiante.pack(pady=10)
 
