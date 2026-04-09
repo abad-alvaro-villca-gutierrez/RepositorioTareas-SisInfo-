@@ -85,7 +85,7 @@ def iniciar_app():
     btn_lista = tk.Button(
     ventana_principal,
     text="📋 VER TAREAS ",
-    bg="blue",
+    bg="#1414CC",
     fg="white",
     font=("Arial", 12, "bold"),
     command=abrir_lista_tareas
