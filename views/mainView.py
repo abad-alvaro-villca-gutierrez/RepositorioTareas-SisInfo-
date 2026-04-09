@@ -1,73 +1,96 @@
 import tkinter as tk
-# Si dejaste este archivo en la raíz, usas: from views.formularioTarea import abrir_formulario_tarea
-# Si lo dejaste dentro de la carpeta views, usas: from formularioTarea import abrir_formulario_tarea
 from formularioTarea import abrir_formulario_tarea
 from entregaEstudiante import abrir_vista_entrega_estudiante
 
 def iniciar_app():
     ventana_principal = tk.Tk()
-    ventana_principal.title("Dashboard - Repositorio de Tareas")
+    ventana_principal.title("Sistema de Gestión Académica - Selección de Rol")
     
-    # Hacer que la ventana se inicie MAXIMIZADA en Windows
+    # Maximizar ventana
     ventana_principal.state('zoomed')
-    
-    # Configuramos un color de fondo un poco más profesional
-    ventana_principal.configure(bg="#f4f6f9", padx=20, pady=20)
+    ventana_principal.configure(bg="#f0f2f5")
 
-    # Contenedor central para organizar los elementos
-    frame_central = tk.Frame(ventana_principal, bg="#f4f6f9")
-    frame_central.pack(expand=True) # expand=True hace que se centre en la pantalla gigante
-
-    # Mensaje de bienvenida
+    # Título superior
     tk.Label(
-        frame_central, 
-        text="Bienvenido al Sistema de Tareas", 
-        font=("Arial", 24, "bold"), 
-        bg="#f4f6f9"
-    ).pack(pady=30)
+        ventana_principal, 
+        text="Repositorio de Tareas", 
+        font=("Arial", 28, "bold"), 
+        bg="#f0f2f5",
+        fg="#1a1a1a"
+    ).pack(pady=(60, 10))
 
-    # Botón que llama a tu formulario
-    btn_nueva_tarea = tk.Button(
-        frame_central, 
-        text="Crear Nueva Tarea", 
+    tk.Label(
+        ventana_principal, 
+        text="Seleccione su perfil para continuar", 
+        font=("Arial", 14), 
+        bg="#f0f2f5",
+        fg="#606770"
+    ).pack(pady=(0, 40))
+
+    # Contenedor para las dos opciones (Docente y Estudiante)
+    frame_opciones = tk.Frame(ventana_principal, bg="#f0f2f5")
+    frame_opciones.pack(expand=True)
+
+    # --- SECCIÓN DOCENTE ---
+    frame_docente = tk.Frame(frame_opciones, bg="white", padx=40, pady=40, highlightbackground="#d1d1d1", highlightthickness=1)
+    frame_docente.grid(row=0, column=0, padx=20)
+
+    tk.Label(frame_docente, text="👨‍🏫", font=("Arial", 50), bg="white").pack()
+    tk.Label(frame_docente, text="Panel Docente", font=("Arial", 16, "bold"), bg="white").pack(pady=10)
+    tk.Label(frame_docente, text="Crear tareas, gestionar\nestados y revisar entregas.", 
+             font=("Arial", 10), bg="white", fg="#606770").pack(pady=10)
+
+    btn_docente = tk.Button(
+        frame_docente, 
+        text="Acceder como Docente", 
         bg="#0052cc", 
         fg="white", 
-        font=("Arial", 14, "bold"),
-        padx=30,
-        pady=15,
-        cursor="hand2", # Cambia el cursor a una manito al pasar por encima
-        command=abrir_formulario_tarea
-    )
-    btn_nueva_tarea.pack(pady=10)
-
-    btn_entrega_alumno = tk.Button(
-        frame_central,
-        text="Subir Entrega Estudiante",
-        bg="#28a745",
-        fg="white",
-        font=("Arial", 14, "bold"),
-        padx=30,
-        pady=15,
-        cursor="hand2",
-        command=abrir_vista_entrega_estudiante
-    )
-    btn_entrega_alumno.pack(pady=10)
-
-    # Botón para salir del sistema
-    btn_salir = tk.Button(
-        frame_central, 
-        text="Salir del Sistema", 
-        bg="#dc3545", 
-        fg="white", 
-        font=("Arial", 12, "bold"),
+        font=("Arial", 11, "bold"),
         padx=20,
         pady=10,
         cursor="hand2",
-        command=ventana_principal.destroy # Cierra la aplicación
+        relief="flat",
+        command=abrir_formulario_tarea
     )
-    btn_salir.pack(pady=30)
+    btn_docente.pack(pady=10)
 
-    # Iniciar el ciclo de la ventana principal
+    # --- SECCIÓN ESTUDIANTE ---
+    frame_estudiante = tk.Frame(frame_opciones, bg="white", padx=40, pady=40, highlightbackground="#d1d1d1", highlightthickness=1)
+    frame_estudiante.grid(row=0, column=1, padx=20)
+
+    tk.Label(frame_estudiante, text="🎓", font=("Arial", 50), bg="white").pack()
+    tk.Label(frame_estudiante, text="Panel Estudiante", font=("Arial", 16, "bold"), bg="white").pack(pady=10)
+    tk.Label(frame_estudiante, text="Ver tareas pendientes y\nsubir archivos de entrega.", 
+             font=("Arial", 10), bg="white", fg="#606770").pack(pady=10)
+
+    btn_estudiante = tk.Button(
+        frame_estudiante, 
+        text="Acceder como Estudiante", 
+        bg="#28a745", 
+        fg="white", 
+        font=("Arial", 11, "bold"),
+        padx=20,
+        pady=10,
+        cursor="hand2",
+        relief="flat",
+        command=abrir_vista_entrega_estudiante
+    )
+    btn_estudiante.pack(pady=10)
+
+    # Botón Salir en la parte inferior
+    btn_salir = tk.Button(
+        ventana_principal, 
+        text="Cerrar Aplicación", 
+        bg="#f0f2f5", 
+        fg="#dc3545", 
+        font=("Arial", 10, "underline"),
+        bd=0,
+        cursor="hand2",
+        activebackground="#f0f2f5",
+        command=ventana_principal.destroy
+    )
+    btn_salir.pack(side=tk.BOTTOM, pady=40)
+
     ventana_principal.mainloop()
 
 if __name__ == "__main__":
