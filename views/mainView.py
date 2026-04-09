@@ -1,7 +1,8 @@
 import tkinter as tk
 # Si dejaste este archivo en la raíz, usas: from views.formularioTarea import abrir_formulario_tarea
 # Si lo dejaste dentro de la carpeta views, usas: from formularioTarea import abrir_formulario_tarea
-from formularioTarea import abrir_formulario_tarea 
+from formularioTarea import abrir_formulario_tarea
+from entregaEstudiante import abrir_vista_entrega_estudiante
 
 def iniciar_app():
     ventana_principal = tk.Tk()
@@ -38,6 +39,19 @@ def iniciar_app():
         command=abrir_formulario_tarea
     )
     btn_nueva_tarea.pack(pady=10)
+
+    btn_entrega_alumno = tk.Button(
+        frame_central,
+        text="Subir Entrega Estudiante",
+        bg="#28a745",
+        fg="white",
+        font=("Arial", 14, "bold"),
+        padx=30,
+        pady=15,
+        cursor="hand2",
+        command=abrir_vista_entrega_estudiante
+    )
+    btn_entrega_alumno.pack(pady=10)
 
     # Botón para salir del sistema
     btn_salir = tk.Button(
