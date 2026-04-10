@@ -4,8 +4,8 @@ import pyodbc
 def conectar():
     try:
         conn = pyodbc.connect(
-            "DRIVER={ODBC Driver 17 for SQL Server};"
-            "SERVER=.\\SQLEXPRESS;" 
+          "DRIVER={ODBC Driver 17 for SQL Server};"
+            "SERVER=localhost;" 
             "DATABASE=SistemaTareas;" 
             "Trusted_Connection=yes;"
             "Encrypt=no;"
