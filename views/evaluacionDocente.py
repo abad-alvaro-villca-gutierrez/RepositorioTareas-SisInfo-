@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 
 
+
 # Paleta
 COL_BG = "#ffefae"
 COL_PANEL = "#6d4145"
@@ -45,33 +46,44 @@ class EvaluacionDocenteWindow(tk.Toplevel):
         main.pack(fill="both", expand=True, padx=12, pady=6)
 
         # Selector de alumno / tarea (ejemplo simple)
-        lbl_alumno = tk.Label(main, text="Estudiante/Tarea:", bg=COL_BG, fg=COL_TEXT)
-        lbl_alumno.grid(row=0, column=0, sticky="w", pady=(6, 2))
+        # Lista de entregas
+        lbl_ent = tk.Label(main, text="Entregas recibidas:", bg=COL_BG, fg=COL_TEXT)
+        lbl_ent.grid(row=0, column=0, sticky="w", pady=(6, 2))
 
-        self.alumno_var = tk.StringVar()
-        alumnos = ["Alumno A - Tarea 1", "Alumno B - Tarea 2", "Alumno C - Tarea 3"]
-        cb_alumno = ttk.Combobox(main, textvariable=self.alumno_var, values=alumnos, state="readonly")
-        cb_alumno.grid(row=0, column=1, sticky="ew", padx=(6, 0))
-        cb_alumno.current(0)
+        cols = ("ID", "Tarea", "Alumno", "Archivo", "Fecha")
+        self.tree_entregas = ttk.Treeview(main, columns=cols, show="headings", height=6)
+        for c in cols:
+            self.tree_entregas.heading(c, text=c)
+            self.tree_entregas.column(c, width=120)
+        self.tree_entregas.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=(0, 6))
+        self.tree_entregas.bind("<<TreeviewSelect>>", self._on_tree_select)
+
+        btns_ent = tk.Frame(main, bg=COL_BG)
+        btns_ent.grid(row=2, column=0, columnspan=2, sticky="w", pady=(6, 8))
+        tk.Button(btns_ent, text="Recargar entregas", command=self._cargar_entregas).pack(side="left", padx=(0, 8))
+
+        # Etiqueta con la entrega seleccionada
+        self.lbl_selected = tk.Label(main, text="Ninguna entrega seleccionada", bg=COL_BG, fg=COL_TEXT)
+        self.lbl_selected.grid(row=3, column=0, columnspan=2, sticky="w")
 
         # Calificación
         lbl_cal = tk.Label(main, text="Calificación (0-100):", bg=COL_BG, fg=COL_TEXT)
-        lbl_cal.grid(row=1, column=0, sticky="w", pady=(8, 2))
+        lbl_cal.grid(row=4, column=0, sticky="w", pady=(8, 2))
 
         self.cal_var = tk.IntVar(value=80)
         sp_cal = tk.Spinbox(main, from_=0, to=100, textvariable=self.cal_var, width=6)
-        sp_cal.grid(row=1, column=1, sticky="w", padx=(6, 0))
+        sp_cal.grid(row=4, column=1, sticky="w", padx=(6, 0))
 
         # Retroalimentación
         lbl_fb = tk.Label(main, text="Retroalimentación:", bg=COL_BG, fg=COL_TEXT)
-        lbl_fb.grid(row=2, column=0, sticky="nw", pady=(8, 2))
+        lbl_fb.grid(row=5, column=0, sticky="nw", pady=(8, 2))
 
         self.txt_fb = tk.Text(main, height=8, wrap="word", bg="white", fg=COL_TEXT)
-        self.txt_fb.grid(row=2, column=1, sticky="nsew", padx=(6, 0))
+        self.txt_fb.grid(row=5, column=1, sticky="nsew", padx=(6, 0))
 
         # Botones
         btn_frame = tk.Frame(main, bg=COL_BG)
-        btn_frame.grid(row=3, column=0, columnspan=2, pady=12)
+        btn_frame.grid(row=6, column=0, columnspan=2, pady=12)
 
         btn_submit = tk.Button(btn_frame, text="Guardar evaluación", bg=COL_ACCENT, fg="white",
                                activebackground=COL_PANEL, command=self._on_submit)
@@ -82,16 +94,23 @@ class EvaluacionDocenteWindow(tk.Toplevel):
 
         # Grid weights
         main.columnconfigure(1, weight=1)
+        main.rowconfigure(1, weight=1)
+
+        # Estado interno
+        self.selected_entrega = None
+        self._cargar_entregas()
+
+        # Grid weights
+        main.columnconfigure(1, weight=1)
         main.rowconfigure(2, weight=1)
 
     def _on_submit(self):
-        alumno = self.alumno_var.get().strip()
+        if not self.selected_entrega:
+            messagebox.showwarning("Validación", "Seleccione primero una entrega de la lista.")
+            return
+
         cal = self.cal_var.get()
         fb = self.txt_fb.get("1.0", "end").strip()
-
-        if not alumno:
-            messagebox.showwarning("Validación", "Seleccione un estudiante/tarea.")
-            return
 
         try:
             cal_val = int(cal)
@@ -106,7 +125,9 @@ class EvaluacionDocenteWindow(tk.Toplevel):
                 return
 
         data = {
-            "estudiante_tarea": alumno,
+            "id_entrega": self.selected_entrega.get("id_entrega"),
+            "id_tarea": self.selected_entrega.get("id_tarea"),
+            "id_alumno": self.selected_entrega.get("id_alumno"),
             "calificacion": cal_val,
             "retroalimentacion": fb,
             "fecha": datetime.now().isoformat()
@@ -140,6 +161,44 @@ class EvaluacionDocenteWindow(tk.Toplevel):
     def _clear_form(self):
         self.cal_var.set(80)
         self.txt_fb.delete("1.0", "end")
+        self.selected_entrega = None
+        self.lbl_selected.config(text="Ninguna entrega seleccionada")
+
+    def _cargar_entregas(self):
+        for r in self.tree_entregas.get_children():
+            self.tree_entregas.delete(r)
+
+        try:
+            # Import here to avoid circular import during module load
+            from config.conexion_bd import traer_entregas
+            entregas = traer_entregas()
+        except Exception:
+            entregas = []
+
+        for e in entregas:
+            # e expected: [id_entrega, id_tarea, id_alumno, ruta_archivo, fecha_entrega]
+            id_entrega = e[0]
+            id_tarea = e[1]
+            id_alumno = e[2]
+            ruta = os.path.basename(e[3]) if e[3] else ""
+            fecha = str(e[4]) if e[4] else ""
+            self.tree_entregas.insert("", "end", iid=str(id_entrega), values=(id_entrega, id_tarea, id_alumno, ruta, fecha))
+
+    def _on_tree_select(self, event):
+        sel = self.tree_entregas.selection()
+        if not sel:
+            return
+        iid = sel[0]
+        vals = self.tree_entregas.item(iid, "values")
+        # map values back
+        self.selected_entrega = {
+            "id_entrega": int(vals[0]),
+            "id_tarea": vals[1],
+            "id_alumno": vals[2],
+            "archivo": vals[3],
+            "fecha": vals[4]
+        }
+        self.lbl_selected.config(text=f"Seleccionada: Alumno {self.selected_entrega['id_alumno']} - Tarea {self.selected_entrega['id_tarea']} (Entrega {self.selected_entrega['id_entrega']})")
 
 
 def abrir_evaluacion_docente(parent=None):
