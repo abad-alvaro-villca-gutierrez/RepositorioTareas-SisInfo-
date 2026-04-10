@@ -6,6 +6,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from entregaEstudiante import abrir_vista_entrega_estudiante
 from config.conexion_bd import traer_tareas
 from rounded_button import RoundedButton
+from lista_tareas_sistema import abrir_lista_tareas
 
 def abrir_panel_alumno():
     ventana = tk.Toplevel()
@@ -32,6 +33,10 @@ def abrir_panel_alumno():
                   command=abrir_vista_entrega_estudiante, font=("Arial", 12, "bold"),
                   activebackground="#6D4145", activeforeground="#FFEFAE", padx=20, pady=12,
                   cursor="hand2").pack(pady=(0, 20))
+    RoundedButton(ventana, text="📋 VER TAREAS", bg="#FFEFAE", fg="#555832",
+              command=abrir_lista_tareas, font=("Arial", 12, "bold"),
+              activebackground="#FFE589", activeforeground="#555832", padx=20, pady=12,
+              cursor="hand2").pack(pady=(0, 20))
 
     # Lista de tareas publicadas
     frame_lista = tk.Frame(ventana, bg="#F5F1E8")
@@ -65,3 +70,4 @@ def abrir_panel_alumno():
                           command=abrir_vista_entrega_estudiante, font=("Arial", 11, "bold"),
                           activebackground="#FFE589", activeforeground="#555832", padx=15, pady=10,
                           cursor="hand2").pack(side="right", padx=20)
+            

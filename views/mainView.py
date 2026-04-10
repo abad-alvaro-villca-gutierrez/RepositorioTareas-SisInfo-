@@ -4,7 +4,7 @@ import os
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from docenteView import abrir_panel_docente
 from alumnoView import abrir_panel_alumno
-from lista_tareas_sistema import abrir_lista_tareas
+
 from rounded_button import RoundedButton
 
 def iniciar_app():
@@ -81,18 +81,7 @@ def iniciar_app():
     btn_estudiante.pack(pady=10)
     
     
-    # BOTON VER TAREAS ORDENADAS
-    btn_lista = RoundedButton(
-        ventana_principal,
-        text="📋 VER TAREAS ",
-        bg="#FFEFAE",
-        fg="#555832",
-        activebackground="#FFE589",
-        activeforeground="#555832",
-        font=("Arial", 12, "bold"),
-        command=abrir_lista_tareas,
-    )
-    btn_lista.pack(pady=10)
+   
 
     # Botón Salir en la parte inferior
     btn_salir = RoundedButton(
