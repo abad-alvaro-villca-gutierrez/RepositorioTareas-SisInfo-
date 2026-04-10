@@ -5,7 +5,7 @@ def conectar():
     try:
         conn = pyodbc.connect(
             "DRIVER={ODBC Driver 17 for SQL Server};"
-            "SERVER=localhost;" 
+            "SERVER=.\\SQLEXPRESS;" 
             "DATABASE=SistemaTareas;" 
             "Trusted_Connection=yes;"
             "Encrypt=no;"
@@ -115,4 +115,24 @@ def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_decimal):
     except Exception as e:
         # Este error saldría si los nombres de columnas no coinciden con la BD
         print(f"❌ Error al procesar la entrega en BD: {e}")
+        return False
+
+        # verificaccion 
+    
+# Línea 121
+def verificar_entrega_existente(id_tarea, id_alumno):
+    # Línea 122: AQUÍ DEBE HABER 4 ESPACIOS (o un Tab)
+    try:
+        conn = conectar()
+        if conn is None: return False
+        
+        cursor = conn.cursor()
+        query = "SELECT COUNT(*) FROM Entregas WHERE id_tarea = ? AND id_alumno = ?"
+        cursor.execute(query, (id_tarea, id_alumno))
+        
+        existe = cursor.fetchone()[0] > 0
+        conn.close()
+        return existe
+    except Exception as e:
+        print(f"Error: {e}")
         return False
