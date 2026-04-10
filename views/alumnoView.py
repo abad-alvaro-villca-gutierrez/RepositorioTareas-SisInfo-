@@ -7,6 +7,7 @@ from entregaEstudiante import abrir_vista_entrega_estudiante
 from config.conexion_bd import traer_tareas
 from rounded_button import RoundedButton
 from lista_tareas_sistema import abrir_lista_tareas
+from datetime import date
 
 def abrir_panel_alumno():
     ventana = tk.Toplevel()
@@ -66,8 +67,22 @@ def abrir_panel_alumno():
                      bg="#FFFFFF", fg="#555832").pack(anchor="w", pady=(3, 0))
             
             # Botón de subir
-            RoundedButton(card, text="📤 Subir Entrega", bg="#FFEFAE", fg="#555832", 
-                          command=abrir_vista_entrega_estudiante, font=("Arial", 11, "bold"),
-                          activebackground="#FFE589", activeforeground="#555832", padx=15, pady=10,
-                          cursor="hand2").pack(side="right", padx=20)
+           # RoundedButton(card, text="📤 Subir Entrega", bg="#FFEFAE", fg="#555832", 
+                        #  command=abrir_vista_entrega_estudiante, font=("Arial", 11, "bold"),
+                        #  activebackground="#FFE589", activeforeground="#555832", padx=15, pady=10,
+                       #   cursor="hand2").pack(side="right", padx=20)
+            # Bloqueo condicional por fecha límite
+            hoy = date.today()
+            fecha_limite = t[3].date() if hasattr(t[3], 'date') else t[3]
+
+            if fecha_limite < hoy:
+                 RoundedButton(card, text="🔒 Plazo Vencido", bg="#cfcfcf", fg="#888888",
+                  command=lambda: None, font=("Arial", 11, "bold"),
+                  activebackground="#cfcfcf", activeforeground="#888888", padx=15, pady=10,
+                  cursor="arrow").pack(side="right", padx=20)
+            else:
+                 RoundedButton(card, text="📤 Subir Entrega", bg="#FFEFAE", fg="#555832",
+                  command=abrir_vista_entrega_estudiante, font=("Arial", 11, "bold"),
+                  activebackground="#FFE589", activeforeground="#555832", padx=15, pady=10,
+                  cursor="hand2").pack(side="right", padx=20)
             
