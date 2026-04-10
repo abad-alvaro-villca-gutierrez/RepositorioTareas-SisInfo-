@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from formularioTarea import abrir_formulario_tarea
 from config.conexion_bd import traer_tareas
+from evaluacionDocente import abrir_evaluacion_docente
 
 def abrir_panel_docente():
     ventana = tk.Toplevel()
@@ -17,6 +18,10 @@ def abrir_panel_docente():
     
     tk.Button(header, text="➕ Crear Nueva Tarea", bg="#0052cc", fg="white", 
               font=("Arial", 10, "bold"), padx=15, pady=8, command=abrir_formulario_tarea).pack(side="right")
+
+    tk.Button(header, text="Calificar Tareas", bg="#28a745", fg="white",
+              font=("Arial", 10, "bold"), padx=12, pady=8,
+              command=lambda: abrir_evaluacion_docente(ventana)).pack(side="right", padx=(0, 8))
 
     # Tabla de Tareas (Treeview)
     tabla_frame = tk.Frame(ventana)

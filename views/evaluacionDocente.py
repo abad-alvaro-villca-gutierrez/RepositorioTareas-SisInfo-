@@ -1,0 +1,156 @@
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+import json
+import os
+from datetime import datetime
+
+
+# Paleta
+COL_BG = "#ffefae"
+COL_PANEL = "#6d4145"
+COL_ACCENT = "#96d1aa"
+COL_TEXT = "#555832"
+
+
+class EvaluacionDocenteApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Evaluación docente")
+        self.configure(bg=COL_BG)
+        self.geometry("540x420")
+
+        self._build_ui(self)
+
+
+class EvaluacionDocenteWindow(tk.Toplevel):
+    def __init__(self, master=None):
+        super().__init__(master=master)
+        self.title("Evaluación docente")
+        self.configure(bg=COL_BG)
+        self.geometry("540x420")
+        self.transient(master)
+
+        self._build_ui(self)
+
+    def _build_ui(self, root_container):
+        header = tk.Frame(root_container, bg=COL_PANEL, height=60)
+        header.pack(fill="x", padx=12, pady=(12, 8))
+
+        lbl_title = tk.Label(header, text="Ingresar calificación y retroalimentación",
+                             bg=COL_PANEL, fg="white", font=(None, 14, "bold"))
+        lbl_title.pack(padx=12, pady=12)
+
+        main = tk.Frame(root_container, bg=COL_BG)
+        main.pack(fill="both", expand=True, padx=12, pady=6)
+
+        # Selector de alumno / tarea (ejemplo simple)
+        lbl_alumno = tk.Label(main, text="Estudiante/Tarea:", bg=COL_BG, fg=COL_TEXT)
+        lbl_alumno.grid(row=0, column=0, sticky="w", pady=(6, 2))
+
+        self.alumno_var = tk.StringVar()
+        alumnos = ["Alumno A - Tarea 1", "Alumno B - Tarea 2", "Alumno C - Tarea 3"]
+        cb_alumno = ttk.Combobox(main, textvariable=self.alumno_var, values=alumnos, state="readonly")
+        cb_alumno.grid(row=0, column=1, sticky="ew", padx=(6, 0))
+        cb_alumno.current(0)
+
+        # Calificación
+        lbl_cal = tk.Label(main, text="Calificación (0-100):", bg=COL_BG, fg=COL_TEXT)
+        lbl_cal.grid(row=1, column=0, sticky="w", pady=(8, 2))
+
+        self.cal_var = tk.IntVar(value=80)
+        sp_cal = tk.Spinbox(main, from_=0, to=100, textvariable=self.cal_var, width=6)
+        sp_cal.grid(row=1, column=1, sticky="w", padx=(6, 0))
+
+        # Retroalimentación
+        lbl_fb = tk.Label(main, text="Retroalimentación:", bg=COL_BG, fg=COL_TEXT)
+        lbl_fb.grid(row=2, column=0, sticky="nw", pady=(8, 2))
+
+        self.txt_fb = tk.Text(main, height=8, wrap="word", bg="white", fg=COL_TEXT)
+        self.txt_fb.grid(row=2, column=1, sticky="nsew", padx=(6, 0))
+
+        # Botones
+        btn_frame = tk.Frame(main, bg=COL_BG)
+        btn_frame.grid(row=3, column=0, columnspan=2, pady=12)
+
+        btn_submit = tk.Button(btn_frame, text="Guardar evaluación", bg=COL_ACCENT, fg="white",
+                               activebackground=COL_PANEL, command=self._on_submit)
+        btn_submit.pack(side="left", ipadx=8, padx=(0, 8))
+
+        btn_clear = tk.Button(btn_frame, text="Limpiar", bg=COL_PANEL, fg="white", command=self._clear_form)
+        btn_clear.pack(side="left", ipadx=8)
+
+        # Grid weights
+        main.columnconfigure(1, weight=1)
+        main.rowconfigure(2, weight=1)
+
+    def _on_submit(self):
+        alumno = self.alumno_var.get().strip()
+        cal = self.cal_var.get()
+        fb = self.txt_fb.get("1.0", "end").strip()
+
+        if not alumno:
+            messagebox.showwarning("Validación", "Seleccione un estudiante/tarea.")
+            return
+
+        try:
+            cal_val = int(cal)
+            if not (0 <= cal_val <= 100):
+                raise ValueError()
+        except Exception:
+            messagebox.showwarning("Validación", "Ingrese una calificación válida entre 0 y 100.")
+            return
+
+        if not fb:
+            if not messagebox.askyesno("Confirmar", "La retroalimentación está vacía. ¿Desea guardar igual?"):
+                return
+
+        data = {
+            "estudiante_tarea": alumno,
+            "calificacion": cal_val,
+            "retroalimentacion": fb,
+            "fecha": datetime.now().isoformat()
+        }
+
+        try:
+            self._save_evaluacion(data)
+            messagebox.showinfo("Guardado", "Evaluación guardada correctamente.")
+            self._clear_form()
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo guardar la evaluación:\n{e}")
+
+    def _save_evaluacion(self, data):
+        uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+        uploads_dir = os.path.abspath(uploads_dir)
+        os.makedirs(uploads_dir, exist_ok=True)
+        file_path = os.path.join(uploads_dir, "evaluaciones.json")
+
+        existing = []
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                try:
+                    existing = json.load(f)
+                except Exception:
+                    existing = []
+
+        existing.append(data)
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(existing, f, ensure_ascii=False, indent=2)
+
+    def _clear_form(self):
+        self.cal_var.set(80)
+        self.txt_fb.delete("1.0", "end")
+
+
+def abrir_evaluacion_docente(parent=None):
+    win = EvaluacionDocenteWindow(master=parent)
+    return win
+
+
+def main():
+    app = EvaluacionDocenteApp()
+    app.mainloop()
+
+
+if __name__ == "__main__":
+    main()
