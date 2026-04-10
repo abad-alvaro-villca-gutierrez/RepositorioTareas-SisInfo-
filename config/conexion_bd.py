@@ -84,33 +84,35 @@ def existe_entrega(id_tarea, id_alumno):
         return False
 
 # 5. GUARDAR O ACTUALIZAR UNA ENTREGA
-def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_kb):
+# 5. GUARDAR O ACTUALIZAR UNA ENTREGA (Actualizado con peso_archivo)
+def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_decimal):
     try:
         conn = conectar()
         if conn is None: return False
         
         cursor = conn.cursor()
         
-        # Si ya existe, la actualizamos (Gestión de Versiones)
+        # Verificamos si ya existe para decidir entre UPDATE o INSERT
         if existe_entrega(id_tarea, id_alumno):
+            # Se actualiza la ruta y el nuevo atributo peso_archivo
             query = """
                 UPDATE Entregas 
-                SET ruta_archivo = ?, peso_archivo_kb = ?, fecha_entrega = GETDATE() 
+                SET ruta_archivo = ?, peso_archivo = ?, fecha_entrega = GETDATE() 
                 WHERE id_tarea = ? AND id_alumno = ?
             """
-            cursor.execute(query, (ruta_archivo, peso_kb, id_tarea, id_alumno))
-        # Si no existe, la insertamos como nueva
+            cursor.execute(query, (ruta_archivo, peso_decimal, id_tarea, id_alumno))
         else:
+            # Se inserta la ruta y el peso_archivo por primera vez
             query = """
-                INSERT INTO Entregas (id_tarea, id_alumno, ruta_archivo, peso_archivo_kb) 
+                INSERT INTO Entregas (id_tarea, id_alumno, ruta_archivo, peso_archivo) 
                 VALUES (?, ?, ?, ?)
             """
-            cursor.execute(query, (id_tarea, id_alumno, ruta_archivo, peso_kb))
+            cursor.execute(query, (id_tarea, id_alumno, ruta_archivo, peso_decimal))
             
         conn.commit()
         conn.close()
         return True
     except Exception as e:
-        # Aquí verás si te falta la columna 'peso_archivo_kb' en la tabla Entregas
-        print(f"❌ Error al procesar la entrega: {e}")
+        # Este error saldría si los nombres de columnas no coinciden con la BD
+        print(f"❌ Error al procesar la entrega en BD: {e}")
         return False
