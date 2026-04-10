@@ -5,6 +5,7 @@ import os
 
 # 1. Le decimos a Python que suba un nivel (..) para reconocer las otras carpetas
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from rounded_button import RoundedButton
 
 # 2. Importamos las funciones necesarias
 from config.conexion_bd import guardar_tarea
@@ -88,13 +89,13 @@ def abrir_formulario_tarea():
     # --- BOTONES DE ACCIÓN (Implementación de Persistencia con Estado) ---
     
     # Botón 1: Guardar como Borrador
-    btn_borrador = tk.Button(ventana, text="Guardar como Borrador", bg="#6c757d", fg="white", 
-                             font=("Arial", 10, "bold"), 
-                             command=lambda: procesar_formulario("Borrador"))
+    btn_borrador = RoundedButton(ventana, text="Guardar como Borrador", bg="#6c757d", fg="white", 
+                                 font=("Arial", 10, "bold"), 
+                                 command=lambda: procesar_formulario("Borrador"))
     btn_borrador.pack(fill="x", pady=5)
 
     # Botón 2: Publicar
-    btn_publicar = tk.Button(ventana, text="Publicar Tarea", bg="#28a745", fg="white", 
-                             font=("Arial", 10, "bold"), 
-                             command=lambda: procesar_formulario("Publicada"))
+    btn_publicar = RoundedButton(ventana, text="Publicar Tarea", bg="#28a745", fg="white", 
+                                 font=("Arial", 10, "bold"), 
+                                 command=lambda: procesar_formulario("Publicada"))
     btn_publicar.pack(fill="x", pady=5)

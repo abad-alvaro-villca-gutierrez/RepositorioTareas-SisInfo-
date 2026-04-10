@@ -7,6 +7,7 @@ import shutil
 # Ajustar ruta para poder importar desde config
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from config.conexion_bd import guardar_entrega, existe_entrega
+from rounded_button import RoundedButton
 
 ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx", ".zip", ".rar", ".png", ".jpg", ".jpeg"]
 MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
@@ -139,7 +140,7 @@ def abrir_vista_entrega_estudiante():
     label_archivo.grid(row=5, column=0, sticky="ew", pady=(0, 12), padx=2)
 
     # Botón Seleccionar
-    btn_seleccionar = tk.Button(
+    btn_seleccionar = RoundedButton(
         frame_main,
         text="📁 Seleccionar archivo",
         command=lambda: seleccionar_archivo(label_archivo, btn_subir),
@@ -151,13 +152,11 @@ def abrir_vista_entrega_estudiante():
         padx=15,
         pady=10,
         cursor="hand2",
-        bd=0,
-        relief="flat"
     )
     btn_seleccionar.grid(row=6, column=0, sticky="ew", pady=(0, 10), padx=2)
 
     # Botón Subir
-    btn_subir = tk.Button(
+    btn_subir = RoundedButton(
         frame_main,
         text="✓ Subir Entrega",
         command=lambda: subir_entrega(entry_id_tarea, entry_id_alumno, label_archivo, btn_subir),
@@ -170,8 +169,6 @@ def abrir_vista_entrega_estudiante():
         pady=10,
         cursor="hand2",
         state="disabled",
-        bd=0,
-        relief="flat"
     )
     btn_subir.grid(row=7, column=0, sticky="ew", pady=(0, 15), padx=2)
 

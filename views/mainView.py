@@ -1,7 +1,11 @@
 import tkinter as tk
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from docenteView import abrir_panel_docente
 from alumnoView import abrir_panel_alumno
 from lista_tareas_sistema import abrir_lista_tareas
+from rounded_button import RoundedButton
 
 def iniciar_app():
     ventana_principal = tk.Tk()
@@ -43,19 +47,15 @@ def iniciar_app():
     tk.Label(frame_docente, text="Crear tareas, gestionar\nestados y revisar entregas.", 
              font=("Arial", 10), bg="white", fg="#555832").pack(pady=10)
 
-    btn_docente = tk.Button(
-        frame_docente, 
-        text="Acceder como Docente", 
-        bg="#555832", 
-        fg="#FFEFAE", 
-        font=("Arial", 11, "bold"),
-        padx=20,
-        pady=10,
-        cursor="hand2",
-        relief="flat",
+    btn_docente = RoundedButton(
+        frame_docente,
+        text="Acceder como Docente",
+        bg="#555832",
+        fg="#FFEFAE",
         activebackground="#6D4145",
         activeforeground="#FFEFAE",
-        command=abrir_panel_docente
+        font=("Arial", 11, "bold"),
+        command=abrir_panel_docente,
     )
     btn_docente.pack(pady=10)
 
@@ -68,50 +68,42 @@ def iniciar_app():
     tk.Label(frame_estudiante, text="Ver tareas pendientes y\nsubir archivos de entrega.", 
              font=("Arial", 10), bg="white", fg="#555832").pack(pady=10)
 
-    btn_estudiante = tk.Button(
-        frame_estudiante, 
-        text="Acceder como Estudiante", 
-        bg="#96D1AA", 
-        fg="#2D4A3E", 
-        font=("Arial", 11, "bold"),
-        padx=20,
-        pady=10,
-        cursor="hand2",
-        relief="flat",
+    btn_estudiante = RoundedButton(
+        frame_estudiante,
+        text="Acceder como Estudiante",
+        bg="#96D1AA",
+        fg="#2D4A3E",
         activebackground="#79B8A0",
         activeforeground="#2D4A3E",
-        command=abrir_panel_alumno
+        font=("Arial", 11, "bold"),
+        command=abrir_panel_alumno,
     )
     btn_estudiante.pack(pady=10)
     
     
     # BOTON VER TAREAS ORDENADAS
-    btn_lista = tk.Button(
-    ventana_principal,
-    text="📋 VER TAREAS ",
-    bg="#FFEFAE",
-    fg="#555832",
-    font=("Arial", 12, "bold"),
-    command=abrir_lista_tareas,
-    activebackground="#FFE589",
-    activeforeground="#555832",
-    relief="flat",
-    cursor="hand2"
+    btn_lista = RoundedButton(
+        ventana_principal,
+        text="📋 VER TAREAS ",
+        bg="#FFEFAE",
+        fg="#555832",
+        activebackground="#FFE589",
+        activeforeground="#555832",
+        font=("Arial", 12, "bold"),
+        command=abrir_lista_tareas,
     )
     btn_lista.pack(pady=10)
 
     # Botón Salir en la parte inferior
-    btn_salir = tk.Button(
+    btn_salir = RoundedButton(
         ventana_principal, 
         text="Cerrar Aplicación", 
         bg="#FFFBF0", 
         fg="#6D4145", 
         font=("Arial", 10, "underline"),
-        bd=0,
-        cursor="hand2",
         activebackground="#FFFBF0",
         activeforeground="#555832",
-        command=ventana_principal.destroy
+        command=ventana_principal.destroy,
     )
     btn_salir.pack(side=tk.BOTTOM, pady=40)
 
