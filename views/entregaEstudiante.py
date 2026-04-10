@@ -7,6 +7,7 @@ import shutil
 # Ajustar ruta para poder importar desde config
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from config.conexion_bd import guardar_entrega, existe_entrega
+from rounded_button import RoundedButton
 
 ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx", ".zip", ".rar", ".png", ".jpg", ".jpeg"]
 MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
@@ -33,7 +34,7 @@ def seleccionar_archivo(label_archivo, boton_subir):
     if extension not in ALLOWED_EXTENSIONS:
         messagebox.showerror("Extensión inválida", "Solo se permiten archivos PDF, DOC/DOCX, ZIP, RAR, PNG y JPG.")
         selected_file_path = None
-        label_archivo.config(text="Ningún archivo seleccionado")
+        label_archivo.config(text="📄 Ningún archivo seleccionado", fg="#888")
         boton_subir.config(state="disabled")
         return
 
@@ -41,12 +42,14 @@ def seleccionar_archivo(label_archivo, boton_subir):
     if tamaño > MAX_FILE_SIZE_BYTES:
         messagebox.showerror("Archivo muy grande", "El archivo supera el límite de 5 MB. Elige uno más pequeño.")
         selected_file_path = None
-        label_archivo.config(text="Ningún archivo seleccionado")
+        label_archivo.config(text="📄 Ningún archivo seleccionado", fg="#888")
         boton_subir.config(state="disabled")
         return
 
     selected_file_path = archivo
-    label_archivo.config(text=os.path.basename(archivo))
+    nombre_archivo = os.path.basename(archivo)
+    tamaño_kb = round(tamaño / 1024, 2)
+    label_archivo.config(text=f"✓ {nombre_archivo} ({tamaño_kb} KB)", fg="#2D4A3E")
     boton_subir.config(state="normal")
 
 
@@ -102,56 +105,77 @@ def abrir_vista_entrega_estudiante():
 
     ventana = tk.Toplevel()
     ventana.title("Subir Entrega - Estudiante")
-    ventana.geometry("450x420")
-    ventana.configure(bg="#eef2f7", padx=20, pady=20)
+    ventana.geometry("500x550")
+    ventana.configure(bg="#FFFBF0", padx=20, pady=20)
     ventana.grab_set()
+    ventana.resizable(True, True)
 
-    tk.Label(ventana, text="Recepción de Entrega Digital", font=("Arial", 16, "bold"), bg="#eef2f7", fg="#1f3a93").pack(pady=(0, 15))
+    # Encabezado con color de la paleta
+    frame_header = tk.Frame(ventana, bg="#6D4145", padx=15, pady=15)
+    frame_header.pack(fill="x", pady=(0, 20))
+    tk.Label(frame_header, text="📥 Recepción de Entrega Digital", font=("Arial", 16, "bold"), 
+             bg="#6D4145", fg="#FFEFAE").pack(anchor="w")
 
-    tk.Label(ventana, text="ID Tarea *:", bg="#eef2f7", fg="#333333").pack(anchor="w")
-    entry_id_tarea = tk.Entry(ventana, width=45, bg="white", fg="#333333", bd=1, highlightthickness=1, highlightcolor="#8fa5c4")
-    entry_id_tarea.pack(pady=(0, 10))
+    # Frame principal usando grid para mejor control
+    frame_main = tk.Frame(ventana, bg="#FFFBF0")
+    frame_main.pack(fill="both", expand=True)
+    frame_main.columnconfigure(0, weight=1)
 
-    tk.Label(ventana, text="ID Alumno *:", bg="#eef2f7", fg="#333333").pack(anchor="w")
-    entry_id_alumno = tk.Entry(ventana, width=45, bg="white", fg="#333333", bd=1, highlightthickness=1, highlightcolor="#8fa5c4")
-    entry_id_alumno.pack(pady=(0, 10))
+    # ID Tarea
+    tk.Label(frame_main, text="ID Tarea *:", bg="#FFFBF0", fg="#555832", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky="w", pady=(5, 3))
+    entry_id_tarea = tk.Entry(frame_main, bg="white", fg="#333333", bd=1, 
+                              highlightthickness=2, highlightbackground="#96D1AA", highlightcolor="#555832")
+    entry_id_tarea.grid(row=1, column=0, sticky="ew", pady=(0, 12), padx=2)
 
-    tk.Label(ventana, text="Archivo seleccionado:", bg="#eef2f7", fg="#333333").pack(anchor="w", pady=(10, 0))
-    label_archivo = tk.Label(ventana, text="Ningún archivo seleccionado", fg="#555", bg="#eef2f7")
-    label_archivo.pack(anchor="w", pady=(0, 10))
+    # ID Alumno
+    tk.Label(frame_main, text="ID Alumno *:", bg="#FFFBF0", fg="#555832", font=("Arial", 10, "bold")).grid(row=2, column=0, sticky="w", pady=(5, 3))
+    entry_id_alumno = tk.Entry(frame_main, bg="white", fg="#333333", bd=1, 
+                               highlightthickness=2, highlightbackground="#96D1AA", highlightcolor="#555832")
+    entry_id_alumno.grid(row=3, column=0, sticky="ew", pady=(0, 12), padx=2)
 
-    btn_seleccionar = tk.Button(
-        ventana,
-        text="Seleccionar archivo",
+    # Archivo seleccionado
+    tk.Label(frame_main, text="Archivo seleccionado:", bg="#FFFBF0", fg="#555832", font=("Arial", 10, "bold")).grid(row=4, column=0, sticky="w", pady=(10, 5))
+    label_archivo = tk.Label(frame_main, text="📄 Ningún archivo seleccionado", fg="#888", bg="#F5F1E8", 
+                             font=("Arial", 10), padx=10, pady=10, wraplength=400, justify="left")
+    label_archivo.grid(row=5, column=0, sticky="ew", pady=(0, 12), padx=2)
+
+    # Botón Seleccionar
+    btn_seleccionar = RoundedButton(
+        frame_main,
+        text="📁 Seleccionar archivo",
         command=lambda: seleccionar_archivo(label_archivo, btn_subir),
-        bg="#4a90e2",
-        fg="white",
-        activebackground="#3f7ecb",
-        activeforeground="white",
-        font=("Arial", 10, "bold"),
-        padx=10,
-        pady=8,
+        bg="#96D1AA",
+        fg="#2D4A3E",
+        activebackground="#79B8A0",
+        activeforeground="#2D4A3E",
+        font=("Arial", 11, "bold"),
+        padx=15,
+        pady=10,
         cursor="hand2",
-        bd=0
     )
-    btn_seleccionar.pack(fill="x", pady=(0, 10))
+    btn_seleccionar.grid(row=6, column=0, sticky="ew", pady=(0, 10), padx=2)
 
-    btn_subir = tk.Button(
-        ventana,
-        text="Subir Entrega",
+    # Botón Subir
+    btn_subir = RoundedButton(
+        frame_main,
+        text="✓ Subir Entrega",
         command=lambda: subir_entrega(entry_id_tarea, entry_id_alumno, label_archivo, btn_subir),
-        bg="#ff7a59",
-        fg="white",
-        activebackground="#e06642",
-        activeforeground="white",
-        font=("Arial", 10, "bold"),
-        padx=10,
-        pady=8,
+        bg="#FFEFAE",
+        fg="#555832",
+        activebackground="#FFE589",
+        activeforeground="#555832",
+        font=("Arial", 11, "bold"),
+        padx=15,
+        pady=10,
         cursor="hand2",
         state="disabled",
-        bd=0
     )
-    btn_subir.pack(fill="x", pady=(0, 15))
+    btn_subir.grid(row=7, column=0, sticky="ew", pady=(0, 15), padx=2)
 
-    tk.Label(ventana, text="Extensiones permitidas: PDF, DOC, DOCX, ZIP, RAR, PNG, JPG", fg="#4d4d4d", bg="#eef2f7").pack(anchor="w")
-    #tk.Label(ventana, text="Tamaño máximo: 5 MB", fg="#333").pack(anchor="w", pady=(0, 5)) 
+    # Información sobre extensiones y límite
+    frame_info = tk.Frame(ventana, bg="#555832", padx=12, pady=10)
+    frame_info.pack(fill="x")
+    tk.Label(frame_info, text="✓ PDF, DOC, DOCX, ZIP, RAR, PNG, JPG", 
+             font=("Arial", 9), bg="#555832", fg="#FFEFAE", wraplength=450, justify="left").pack(anchor="w", pady=2)
+    tk.Label(frame_info, text="✓ Tamaño máximo: 5 MB", 
+             font=("Arial", 9), bg="#555832", fg="#FFEFAE", wraplength=450, justify="left").pack(anchor="w", pady=2) 

@@ -1,8 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from formularioTarea import abrir_formulario_tarea
 from config.conexion_bd import traer_tareas
 from evaluacionDocente import abrir_evaluacion_docente
+from rounded_button import RoundedButton
 
 def abrir_panel_docente():
     ventana = tk.Toplevel()
@@ -16,8 +20,8 @@ def abrir_panel_docente():
 
     tk.Label(header, text="Gestión de Tareas", font=("Arial", 20, "bold"), bg="#f4f6f9").pack(side="left")
     
-    tk.Button(header, text="➕ Crear Nueva Tarea", bg="#0052cc", fg="white", 
-              font=("Arial", 10, "bold"), padx=15, pady=8, command=abrir_formulario_tarea).pack(side="right")
+    RoundedButton(header, text="➕ Crear Nueva Tarea", bg="#0052cc", fg="white", 
+                  font=("Arial", 10, "bold"), padx=15, pady=8, command=abrir_formulario_tarea).pack(side="right")
 
     tk.Button(header, text="Calificar Tareas", bg="#28a745", fg="white",
               font=("Arial", 10, "bold"), padx=12, pady=8,

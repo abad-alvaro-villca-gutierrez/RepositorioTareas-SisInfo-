@@ -1,5 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+from rounded_button import RoundedButton
 
 def subir_archivo():
     ya_existe_entrega = True  # simula que ya existe una entrega
@@ -20,7 +24,7 @@ def subir_archivo():
 ventana = tk.Tk()
 ventana.title("Subida de tareas")
 
-boton = tk.Button(ventana, text="Subir archivo", command=subir_archivo)
+boton = RoundedButton(ventana, text="Subir archivo", command=subir_archivo, bg="#96D1AA", fg="#2D4A3E", font=("Arial", 11, "bold"))
 boton.pack(pady=20)
 
 ventana.mainloop()
