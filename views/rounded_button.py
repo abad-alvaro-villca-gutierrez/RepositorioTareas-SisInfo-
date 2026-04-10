@@ -41,8 +41,25 @@ class RoundedButton(tk.Canvas):
         **kwargs,
     ):
         bg_parent = master.cget("bg") if "bg" in master.keys() else "#FFFFFF"
-        super().__init__(master, highlightthickness=0, bd=0, bg=bg_parent, cursor=cursor, **kwargs)
-
+        
+        # Calcular dimensiones iniciales basadas en el texto
+        temp_font = tkfont.Font(font=font)
+        text_width = temp_font.measure(text)
+        text_height = temp_font.metrics("linespace")
+        canvas_width = max(text_width + padx * 2, 120)
+        canvas_height = text_height + pady * 2 + 4
+        
+        super().__init__(
+            master, 
+            width=canvas_width, 
+            height=canvas_height, 
+            highlightthickness=0, 
+            bd=0, 
+            bg=bg_parent, 
+            cursor=cursor,
+            **kwargs
+        )
+        
         self._text = text
         self._command = command
         self._radius = radius
@@ -70,15 +87,18 @@ class RoundedButton(tk.Canvas):
 
     def _draw(self):
         self.delete("all")
-        text_width = self._font.measure(self._text)
-        text_height = self._font.metrics("linespace")
-        width = max(text_width + self._padx * 2, 100)
-        height = text_height + self._pady * 2
-
-        if self.winfo_width() > 1:
-            width = self.winfo_width()
-
-        self.config(width=width, height=height)
+        
+        # Obtener dimensiones del widget de Tkinter (en píxeles)
+        width = self.winfo_width()
+        height = self.winfo_height()
+        
+        # Si el widget aún no está mapeado, usar las dimensiones por defecto
+        if width < 2:
+            # Recalcular basado en el texto
+            text_width = self._font.measure(self._text)
+            text_height = self._font.metrics("linespace")
+            width = max(text_width + self._padx * 2, 120)
+            height = text_height + self._pady * 2 + 4
 
         bg = self._disabledbg if self._state == "disabled" else self._current_bg
         fg = self._disabledfg if self._state == "disabled" else self._current_fg

@@ -35,12 +35,12 @@ def iniciar_app():
     # Contenedor para las dos opciones (Docente y Estudiante)
     frame_opciones = tk.Frame(ventana_principal, bg="#FFFBF0")
     frame_opciones.pack(expand=True)
+    frame_opciones.columnconfigure(0, weight=1)
+    frame_opciones.columnconfigure(1, weight=1)
     
-      
-
     # --- SECCIÓN DOCENTE ---
     frame_docente = tk.Frame(frame_opciones, bg="white", padx=40, pady=40, highlightbackground="#96D1AA", highlightthickness=3)
-    frame_docente.grid(row=0, column=0, padx=20)
+    frame_docente.grid(row=0, column=0, padx=20, sticky="nsew")
 
     tk.Label(frame_docente, text="👨‍🏫", font=("Arial", 50), bg="white").pack()
     tk.Label(frame_docente, text="Panel Docente", font=("Arial", 16, "bold"), bg="white", fg="#6D4145").pack(pady=10)
@@ -61,7 +61,7 @@ def iniciar_app():
 
     # --- SECCIÓN ESTUDIANTE ---
     frame_estudiante = tk.Frame(frame_opciones, bg="white", padx=40, pady=40, highlightbackground="#96D1AA", highlightthickness=3)
-    frame_estudiante.grid(row=0, column=1, padx=20)
+    frame_estudiante.grid(row=0, column=1, padx=20, sticky="nsew")
 
     tk.Label(frame_estudiante, text="🎓", font=("Arial", 50), bg="white").pack()
     tk.Label(frame_estudiante, text="Panel Estudiante", font=("Arial", 16, "bold"), bg="white", fg="#6D4145").pack(pady=10)
