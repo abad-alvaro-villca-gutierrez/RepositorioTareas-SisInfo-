@@ -75,29 +75,32 @@ def abrir_panel_alumno():
     # --- CARGA DE DATOS ---
     tareas = traer_tareas()
     
-    # Manejo de índices dinámico para evitar el IndexError
-    # Basado en tu estructura detectada: [0:ID, 1:Nombre, 2:Desc, 3:Vence, 4:Estado]
-    # Si 'Publicada' está en t[4], entonces la fecha debe estar antes.
-    
-    tareas_publicas = [t for t in tareas if len(t) > 4 and t[4] == "Publicada"]
+    # Filtramos solo las tareas con estado "Publicada" (el estado está en t[4])
+    tareas_publicas = [t for t in tareas if len(t) > 5 and t[4] == "Publicada"]
 
     if not tareas_publicas:
         tk.Label(frame_lista, text="No hay tareas publicadas por ahora. ✨", bg="#F5F1E8", 
                  font=("Segoe UI", 14), fg="#6D4145").pack(pady=60)
     else:
         for t in tareas_publicas:
-            # MAPEO SEGURO DE DATOS (Ajustado a 5 columnas)
-            nombre_tarea = t[1] if len(t) > 1 else "Tarea sin nombre"
-            # Si el error dio en t[5], es que tu fecha está en t[3]
-            descripcion  = t[2] if len(t) > 2 else "Sin descripción"
-            fecha_bd     = t[3] if len(t) > 3 else date.today()
-            
-            # Nota/Puntaje: Si no viene en la consulta, ponemos un valor por defecto
-            puntaje = "S/N" 
+            # MAPEO CORRECTO EN BASE A LA CONSULTA SQL ACTUAL
+            # [0: id_tarea, 1: nombre_tarea, 2: descripcion, 3: puntaje, 4: estado, 5: fecha_vencimiento]
+            nombre_tarea = t[1]
+            descripcion  = t[2]
+            puntaje      = t[3]
+            fecha_bd     = t[5]
             
             hoy = date.today()
+            
+            # Nos aseguramos de que lo que venga de BD se trate como fecha pura
             fecha_limite = fecha_bd.date() if hasattr(fecha_bd, 'date') else fecha_bd
-            esta_vencida = fecha_limite < hoy
+            
+            # Verificación de seguridad por si alguna fecha en BD es Nula
+            if isinstance(fecha_limite, date):
+                esta_vencida = fecha_limite < hoy
+            else:
+                esta_vencida = False
+                
             color_acento = "#FF5252" if esta_vencida else "#96D1AA"
 
             # --- CARD ---

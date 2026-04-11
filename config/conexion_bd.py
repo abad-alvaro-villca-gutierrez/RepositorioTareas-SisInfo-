@@ -27,14 +27,13 @@ def guardar_tarea(nombre, descripcion, puntaje, fecha_vencimiento, estado='Borra
         if conn is None: return False
         
         cursor = conn.cursor()
-        # Aseguramos que los nombres coincidan con tu tabla física
         query = """
             INSERT INTO Tareas (nombre_tarea, descripcion, puntaje, fecha_vencimiento, estado) 
             VALUES (?, ?, ?, ?, ?)
         """
         cursor.execute(query, (nombre, descripcion, puntaje, fecha_vencimiento, estado))
         
-        conn.commit() # PERSISTENCIA: Guarda los cambios físicamente
+        conn.commit() 
         conn.close()
         return True
     except Exception as e:
@@ -48,14 +47,17 @@ def traer_tareas():
         if conn is None: return []
         
         cursor = conn.cursor()
-        # Seleccionamos las columnas que ya verificamos que existen
-        query = "SELECT id_tarea, nombre_tarea, puntaje, fecha_vencimiento, estado FROM Tareas ORDER BY id_tarea DESC"
+        # Se agregaron descripcion y fecha para que no falle la vista
+        query = """
+            SELECT id_tarea, nombre_tarea, descripcion, puntaje, estado, fecha_vencimiento 
+            FROM Tareas 
+            ORDER BY id_tarea DESC
+        """
         cursor.execute(query)
         
         datos = cursor.fetchall()
         conn.close()
         
-        # Convertimos los objetos Row a una lista simple de Python
         return [list(fila) for fila in datos]
     except Exception as e:
         print(f"❌ Error al traer tareas: {e}")
@@ -84,7 +86,6 @@ def existe_entrega(id_tarea, id_alumno):
         return False
 
 # 5. GUARDAR O ACTUALIZAR UNA ENTREGA
-# 5. GUARDAR O ACTUALIZAR UNA ENTREGA (Actualizado con peso_archivo)
 def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_decimal):
     try:
         conn = conectar()
@@ -92,20 +93,17 @@ def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_decimal):
         
         cursor = conn.cursor()
         
-        # Verificamos si ya existe para decidir entre UPDATE o INSERT
         if existe_entrega(id_tarea, id_alumno):
-            # Se actualiza la ruta y el nuevo atributo peso_archivo
             query = """
                 UPDATE Entregas 
-                SET ruta_archivo = ?, peso_archivo = ?, fecha_entrega = GETDATE() 
+                SET ruta_archivo = ?, peso_archivo_kb = ?, fecha_entrega = GETDATE() 
                 WHERE id_tarea = ? AND id_alumno = ?
             """
             cursor.execute(query, (ruta_archivo, peso_decimal, id_tarea, id_alumno))
         else:
-            # Se inserta la ruta y el peso_archivo por primera vez
             query = """
-                INSERT INTO Entregas (id_tarea, id_alumno, ruta_archivo, peso_archivo) 
-                VALUES (?, ?, ?, ?)
+                INSERT INTO Entregas (id_tarea, id_alumno, ruta_archivo, peso_archivo_kb, fecha_entrega) 
+                VALUES (?, ?, ?, ?, GETDATE())
             """
             cursor.execute(query, (id_tarea, id_alumno, ruta_archivo, peso_decimal))
             
@@ -113,15 +111,11 @@ def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_decimal):
         conn.close()
         return True
     except Exception as e:
-        # Este error saldría si los nombres de columnas no coinciden con la BD
         print(f"❌ Error al procesar la entrega en BD: {e}")
         return False
 
-        # verificaccion 
-    
-# Línea 121
+# 6. VERIFICAR ENTREGA EXISTENTE (Conteo)
 def verificar_entrega_existente(id_tarea, id_alumno):
-    # Línea 122: AQUÍ DEBE HABER 4 ESPACIOS (o un Tab)
     try:
         conn = conectar()
         if conn is None: return False
@@ -136,10 +130,8 @@ def verificar_entrega_existente(id_tarea, id_alumno):
     except Exception as e:
         print(f"Error: {e}")
         return False
-    
-  
 
-# OBTENER ALUMNOS QUE ENTREGARON A TIEMPO
+# 7. OBTENER ALUMNOS QUE ENTREGARON A TIEMPO
 def alumnos_entregaron_a_tiempo(id_tarea):
     try:
         conn = conectar()
@@ -162,7 +154,7 @@ def alumnos_entregaron_a_tiempo(id_tarea):
         print(f"❌ Error al obtener alumnos a tiempo: {e}")
         return []
     
-    # OBTENER ARCHIVO ANTERIOR DE UNA ENTREGA
+# 8. OBTENER ARCHIVO ANTERIOR DE UNA ENTREGA
 def obtener_archivo_anterior(id_tarea, id_alumno):
     try:
         conn = conectar()
@@ -178,3 +170,31 @@ def obtener_archivo_anterior(id_tarea, id_alumno):
     except Exception as e:
         print(f"❌ Error al obtener archivo anterior: {e}")
         return None
+
+# ==========================================
+# SECCIÓN: ALERTAS Y NOTIFICACIONES
+# ==========================================
+
+# 9. TRAER TAREAS VENCIDAS (Para alerta del Docente)
+def traer_tareas_vencidas():
+    """Busca tareas que ya pasaron su fecha de vencimiento y siguen publicadas"""
+    try:
+        conn = conectar()
+        if conn is None: return []
+        
+        cursor = conn.cursor()
+        query = """
+            SELECT nombre_tarea, fecha_vencimiento 
+            FROM Tareas 
+            WHERE fecha_vencimiento < CAST(GETDATE() AS DATE) 
+            AND estado = 'Publicada'
+        """
+        cursor.execute(query)
+        
+        datos = cursor.fetchall()
+        conn.close()
+        
+        return [list(fila) for fila in datos]
+    except Exception as e:
+        print(f"❌ Error al buscar tareas vencidas: {e}")
+        return []
