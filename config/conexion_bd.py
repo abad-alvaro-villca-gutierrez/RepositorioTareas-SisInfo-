@@ -161,3 +161,20 @@ def alumnos_entregaron_a_tiempo(id_tarea):
     except Exception as e:
         print(f"❌ Error al obtener alumnos a tiempo: {e}")
         return []
+    
+    # OBTENER ARCHIVO ANTERIOR DE UNA ENTREGA
+def obtener_archivo_anterior(id_tarea, id_alumno):
+    try:
+        conn = conectar()
+        if conn is None: return None
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT ruta_archivo FROM Entregas WHERE id_tarea = ? AND id_alumno = ?",
+            (id_tarea, id_alumno)
+        )
+        resultado = cursor.fetchone()
+        conn.close()
+        return resultado[0] if resultado else None
+    except Exception as e:
+        print(f"❌ Error al obtener archivo anterior: {e}")
+        return None

@@ -3,6 +3,7 @@ from tkinter import filedialog, messagebox
 import sys
 import os
 import shutil
+from config.conexion_bd import guardar_entrega, existe_entrega, obtener_archivo_anterior
 
 # Ajustar ruta para poder importar desde config
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -68,12 +69,14 @@ def subir_entrega(entry_id_tarea, entry_id_alumno, label_archivo, boton_subir):
         return
 
     if existe_entrega(id_tarea, id_alumno):
-        reemplazar = messagebox.askyesno(
-            "Entrega existente",
-            "Ya existe una entrega para esta tarea. ¿Deseas reemplazarla con el nuevo archivo?"
-        )
-        if not reemplazar:
-            return
+     archivo_anterior = obtener_archivo_anterior(id_tarea, id_alumno)
+     nombre_anterior = os.path.basename(archivo_anterior) if archivo_anterior else "archivo desconocido"
+     reemplazar = messagebox.askyesno(
+        "⚠️ Entrega duplicada detectada",
+        f"Archivo actual: {nombre_anterior}\n\n¿Deseas reemplazarlo con el nuevo archivo?"
+    )
+    if not reemplazar:
+        return
 
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -179,3 +182,4 @@ def abrir_vista_entrega_estudiante():
              font=("Arial", 9), bg="#555832", fg="#FFEFAE", wraplength=450, justify="left").pack(anchor="w", pady=2)
     tk.Label(frame_info, text="✓ Tamaño máximo: 5 MB", 
              font=("Arial", 9), bg="#555832", fg="#FFEFAE", wraplength=450, justify="left").pack(anchor="w", pady=2) 
+
