@@ -50,7 +50,7 @@ class EvaluacionDocenteWindow(tk.Toplevel):
         lbl_ent = tk.Label(main, text="Entregas recibidas:", bg=COL_BG, fg=COL_TEXT)
         lbl_ent.grid(row=0, column=0, sticky="w", pady=(6, 2))
 
-        cols = ("ID", "Tarea", "Alumno", "Archivo", "Fecha")
+        cols = ("ID", "Tarea", "Alumno", "Archivo", "Fecha", "A tiempo")
         self.tree_entregas = ttk.Treeview(main, columns=cols, show="headings", height=6)
         for c in cols:
             self.tree_entregas.heading(c, text=c)
@@ -165,25 +165,27 @@ class EvaluacionDocenteWindow(tk.Toplevel):
         self.lbl_selected.config(text="Ninguna entrega seleccionada")
 
     def _cargar_entregas(self):
-        for r in self.tree_entregas.get_children():
-            self.tree_entregas.delete(r)
+      for r in self.tree_entregas.get_children():
+        self.tree_entregas.delete(r)
 
-        try:
-            # Import here to avoid circular import during module load
-            from config.conexion_bd import traer_entregas
-            entregas = traer_entregas()
-        except Exception:
-            entregas = []
+      try:
+        from config.conexion_bd import traer_entregas, alumnos_entregaron_a_tiempo
+        entregas = traer_entregas()
+      except Exception:
+        entregas = []
 
-        for e in entregas:
-            # e expected: [id_entrega, id_tarea, id_alumno, ruta_archivo, fecha_entrega]
-            id_entrega = e[0]
-            id_tarea = e[1]
-            id_alumno = e[2]
-            ruta = os.path.basename(e[3]) if e[3] else ""
-            fecha = str(e[4]) if e[4] else ""
-            self.tree_entregas.insert("", "end", iid=str(id_entrega), values=(id_entrega, id_tarea, id_alumno, ruta, fecha))
-
+      for e in entregas:
+        id_entrega = e[0]
+        id_tarea = e[1]
+        id_alumno = e[2]
+        ruta = os.path.basename(e[3]) if e[3] else ""
+        fecha = str(e[4]) if e[4] else ""
+        entregaron = [x[0] for x in alumnos_entregaron_a_tiempo(int(id_tarea))]
+        a_tiempo = "✅ Sí" if int(id_alumno) in entregaron else "❌ No"
+        self.tree_entregas.insert("", "end", iid=str(id_entrega), values=(id_entrega, id_tarea, id_alumno, ruta, fecha, a_tiempo))
+        
+        
+        
     def _on_tree_select(self, event):
         sel = self.tree_entregas.selection()
         if not sel:
