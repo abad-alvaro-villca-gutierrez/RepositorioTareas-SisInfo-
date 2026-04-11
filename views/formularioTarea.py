@@ -3,7 +3,7 @@ from tkinter import messagebox
 import sys
 import os
 
-# 1. Le decimos a Python que suba un nivel (..) para reconocer las otras carpetas
+# 1. Configuración de rutas para reconocer las otras carpetas
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from rounded_button import RoundedButton
 
@@ -11,9 +11,9 @@ from rounded_button import RoundedButton
 from config.conexion_bd import guardar_tarea
 from controllers.tarea_controladores import validar_tarea
 
-def procesar_formulario(estado_elegido="Publicada"):
+def procesar_formulario(ventana_instancia, estado_elegido="Publicada"):
     """Esta función se ejecuta al hacer clic en los botones de guardado"""
-    # 1. Obtener datos
+    # 1. Obtener datos de los campos globales
     titulo = entry_titulo.get().strip()
     descripcion = text_descripcion.get("1.0", tk.END).strip()
     puntaje = entry_puntaje.get().strip()
@@ -31,71 +31,66 @@ def procesar_formulario(estado_elegido="Publicada"):
         puntaje_int = int(puntaje)
         
         # Guardamos en la Base de Datos usando el estado elegido
-        # Aquí se cumple la "Persistencia de datos con su estado correspondiente"
         exito = guardar_tarea(titulo, descripcion, puntaje_int, fecha, estado=estado_elegido)
 
-        # 4. Feedback al usuario
+        # 4. Feedback al usuario y cierre
         if exito:
             messagebox.showinfo("Éxito", f"¡La tarea se guardó como {estado_elegido}!")
-            limpiar_campos() 
+            # CERRAMOS LA VENTANA AUTOMÁTICAMENTE
+            ventana_instancia.destroy() 
         else:
             messagebox.showerror("Error de BD", "Hubo un problema al persistir los datos.")
             
     except Exception as e:
         messagebox.showerror("Error Crítico", f"Ocurrió un error inesperado: {e}")
-        
-def limpiar_campos():
-    """Limpia el formulario después de guardar"""
-    entry_titulo.delete(0, tk.END)
-    text_descripcion.delete("1.0", tk.END)
-    entry_puntaje.delete(0, tk.END)
-    entry_fecha.delete(0, tk.END)
-
-# ==========================================
-# DISEÑO DE LA INTERFAZ GRÁFICA (SUB-VENTANA)
-# ==========================================
 
 def abrir_formulario_tarea():
     """Función que dibuja y abre la ventana del formulario"""
     
+    # Declaramos globales para que procesar_formulario pueda leer los Entry
     global entry_titulo, text_descripcion, entry_puntaje, entry_fecha
 
     ventana = tk.Toplevel()
-    ventana.title("Repositorio de Tareas - Panel Docente")
-    ventana.geometry("400x550") # Un poco más alta para los botones
-    ventana.configure(padx=20, pady=20)
+    ventana.title("Crear Tarea - Sistema Educativo")
+    ventana.geometry("420x600")
+    ventana.configure(bg="#f8f9fa", padx=30, pady=25)
+    
+    # Hacer que la ventana sea modal (bloquea la de atrás hasta cerrar)
     ventana.grab_set()
 
-    # Título Principal
-    tk.Label(ventana, text="Crear Nueva Tarea", font=("Arial", 16, "bold")).pack(pady=(0, 15))
+    # --- DISEÑO ---
+    tk.Label(ventana, text="Nueva Tarea", font=("Segoe UI", 18, "bold"), 
+             bg="#f8f9fa", fg="#333").pack(pady=(0, 20))
 
-    # Inputs
-    tk.Label(ventana, text="Título de la tarea *:").pack(anchor="w")
-    entry_titulo = tk.Entry(ventana, width=40)
-    entry_titulo.pack(pady=(0, 10))
+    # Título
+    tk.Label(ventana, text="Título de la tarea *", font=("Segoe UI", 10), bg="#f8f9fa").pack(anchor="w")
+    entry_titulo = tk.Entry(ventana, font=("Segoe UI", 11), bd=1, relief="solid")
+    entry_titulo.pack(fill="x", pady=(5, 15))
 
-    tk.Label(ventana, text="Descripción:").pack(anchor="w")
-    text_descripcion = tk.Text(ventana, width=40, height=6)
-    text_descripcion.pack(pady=(0, 10))
+    # Descripción
+    tk.Label(ventana, text="Descripción", font=("Segoe UI", 10), bg="#f8f9fa").pack(anchor="w")
+    text_descripcion = tk.Text(ventana, font=("Segoe UI", 11), height=5, bd=1, relief="solid")
+    text_descripcion.pack(fill="x", pady=(5, 15))
 
-    tk.Label(ventana, text="Puntaje Máximo *:").pack(anchor="w")
-    entry_puntaje = tk.Entry(ventana, width=40)
-    entry_puntaje.pack(pady=(0, 10))
+    # Puntaje
+    tk.Label(ventana, text="Puntaje Máximo *", font=("Segoe UI", 10), bg="#f8f9fa").pack(anchor="w")
+    entry_puntaje = tk.Entry(ventana, font=("Segoe UI", 11), bd=1, relief="solid")
+    entry_puntaje.pack(fill="x", pady=(5, 15))
 
-    tk.Label(ventana, text="Fecha límite (YYYY-MM-DD) *:").pack(anchor="w")
-    entry_fecha = tk.Entry(ventana, width=40)
-    entry_fecha.pack(pady=(0, 20))
+    # Fecha
+    tk.Label(ventana, text="Fecha límite (YYYY-MM-DD) *", font=("Segoe UI", 10), bg="#f8f9fa").pack(anchor="w")
+    entry_fecha = tk.Entry(ventana, font=("Segoe UI", 11), bd=1, relief="solid")
+    entry_fecha.pack(fill="x", pady=(5, 25))
 
-    # --- BOTONES DE ACCIÓN (Implementación de Persistencia con Estado) ---
-    
-    # Botón 1: Guardar como Borrador
-    btn_borrador = RoundedButton(ventana, text="Guardar como Borrador", bg="#6c757d", fg="white", 
-                                 font=("Arial", 10, "bold"), 
-                                 command=lambda: procesar_formulario("Borrador"))
+    # --- BOTONES ---
+    # Botón Borrador (Pasa la referencia 'ventana' para poder cerrarla después)
+    btn_borrador = RoundedButton(ventana, text="📁 Guardar Borrador", bg="#6c757d", fg="white", 
+                                  font=("Segoe UI", 10, "bold"), 
+                                  command=lambda: procesar_formulario(ventana, "Borrador"))
     btn_borrador.pack(fill="x", pady=5)
 
-    # Botón 2: Publicar
-    btn_publicar = RoundedButton(ventana, text="Publicar Tarea", bg="#28a745", fg="white", 
-                                 font=("Arial", 10, "bold"), 
-                                 command=lambda: procesar_formulario("Publicada"))
+    # Botón Publicar
+    btn_publicar = RoundedButton(ventana, text="🚀 Publicar Tarea", bg="#28a745", fg="white", 
+                                  font=("Segoe UI", 10, "bold"), 
+                                  command=lambda: procesar_formulario(ventana, "Publicada"))
     btn_publicar.pack(fill="x", pady=5)
