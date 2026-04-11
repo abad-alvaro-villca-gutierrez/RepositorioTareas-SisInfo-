@@ -4,5 +4,11 @@
     "calificacion": 66,
     "retroalimentacion": "le falta",
     "fecha": "2026-04-10T10:20:32.443463"
+  },
+  {
+    "estudiante_tarea": "Alumno B - Tarea 2",
+    "calificacion": 80,
+    "retroalimentacion": "",
+    "fecha": "2026-04-10T15:41:19.402286"
   }
 ]

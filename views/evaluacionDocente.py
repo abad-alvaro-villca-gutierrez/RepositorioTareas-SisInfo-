@@ -19,7 +19,7 @@ class EvaluacionDocenteApp(tk.Tk):
         super().__init__()
         self.title("Evaluación docente")
         self.configure(bg=COL_BG)
-        self.geometry("540x420")
+        self.geometry("900x500")
 
         self._build_ui(self)
 
@@ -29,7 +29,7 @@ class EvaluacionDocenteWindow(tk.Toplevel):
         super().__init__(master=master)
         self.title("Evaluación docente")
         self.configure(bg=COL_BG)
-        self.geometry("540x420")
+        self.geometry("900x500")
         self.transient(master)
 
         self._build_ui(self)
@@ -51,6 +51,7 @@ class EvaluacionDocenteWindow(tk.Toplevel):
         lbl_ent.grid(row=0, column=0, sticky="w", pady=(6, 2))
 
         cols = ("ID", "Tarea", "Alumno", "Archivo", "Fecha", "A tiempo")
+        
         self.tree_entregas = ttk.Treeview(main, columns=cols, show="headings", height=6)
         for c in cols:
             self.tree_entregas.heading(c, text=c)
@@ -60,7 +61,8 @@ class EvaluacionDocenteWindow(tk.Toplevel):
 
         btns_ent = tk.Frame(main, bg=COL_BG)
         btns_ent.grid(row=2, column=0, columnspan=2, sticky="w", pady=(6, 8))
-        tk.Button(btns_ent, text="Recargar entregas", command=self._cargar_entregas).pack(side="left", padx=(0, 8))
+        tk.Button(btns_ent, text="Recargar entregas", command=self._cargar_entregas,
+          pady=15).pack(side="left", padx=(0, 8))
 
         # Etiqueta con la entrega seleccionada
         self.lbl_selected = tk.Label(main, text="Ninguna entrega seleccionada", bg=COL_BG, fg=COL_TEXT)

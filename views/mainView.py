@@ -82,6 +82,7 @@ def iniciar_app():
     
     
    
+   
 
     # Botón Salir en la parte inferior
     btn_salir = RoundedButton(
