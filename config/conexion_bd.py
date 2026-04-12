@@ -8,7 +8,7 @@ def conectar():
         # Se volvió a agregar \\SQLEXPRESS para solucionar el error de conexión (Timeout)
         conn = pyodbc.connect(
              "DRIVER={ODBC Driver 17 for SQL Server};"
-            "SERVER=localhost\\SQLEXPRESS;" 
+            "SERVER=localhost;" 
             "DATABASE=SistemaTareas;" 
             "Trusted_Connection=yes;"
             "Encrypt=no;"
