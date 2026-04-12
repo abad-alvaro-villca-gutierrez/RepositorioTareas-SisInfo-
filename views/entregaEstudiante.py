@@ -1,13 +1,27 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox
 import sys
 import os
+import tkinter as tk
+from tkinter import filedialog, messagebox
 import shutil
-from config.conexion_bd import guardar_entrega, existe_entrega, obtener_archivo_anterior
 
-# Ajustar ruta para poder importar desde config
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from config.conexion_bd import guardar_entrega, existe_entrega
+# 1. AJUSTE DE RUTA: Esto permite que Python vea la carpeta 'config'
+directorio_actual = os.path.dirname(__file__)
+directorio_padre = os.path.abspath(os.path.join(directorio_actual, '..'))
+if directorio_padre not in sys.path:
+    sys.path.append(directorio_padre)
+
+# 2. IMPORTACIÓN CORREGIDA: Agregamos 'verificar_entrega_existente' a la lista
+try:
+    from config.conexion_bd import (
+        guardar_entrega, 
+        verificar_entrega_existente, 
+        existe_entrega, 
+        obtener_archivo_anterior
+    )
+except ImportError as e:
+    print(f"Error importando módulos: {e}")
+
+# ... resto de tus variables globales (ALLOWED_EXTENSIONS, etc.)
 from rounded_button import RoundedButton
 
 ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx", ".zip", ".rar", ".png", ".jpg", ".jpeg"]
@@ -57,50 +71,64 @@ def seleccionar_archivo(label_archivo, boton_subir):
 def subir_entrega(entry_id_tarea, entry_id_alumno, label_archivo, boton_subir):
     global selected_file_path
 
-    id_tarea = entry_id_tarea.get().strip()
-    id_alumno = entry_id_alumno.get().strip()
+    # Leer IDs
+    id_t = entry_id_tarea.get().strip()
+    id_a = entry_id_alumno.get().strip()
 
-    if not id_tarea or not id_alumno:
-        messagebox.showwarning("Campos obligatorios", "Completa el ID de tarea y el ID de alumno.")
+    # Validaciones básicas
+    if not id_t or not id_a:
+        messagebox.showwarning("Campos vacíos", "Por favor ingresa el ID de Tarea y el ID de Alumno.")
         return
 
     if not selected_file_path:
-        messagebox.showwarning("Archivo no seleccionado", "Selecciona un archivo antes de subir la entrega.")
+        messagebox.showwarning("Falta archivo", "Debes seleccionar un archivo primero.")
         return
 
-    if existe_entrega(id_tarea, id_alumno):
-     archivo_anterior = obtener_archivo_anterior(id_tarea, id_alumno)
-     nombre_anterior = os.path.basename(archivo_anterior) if archivo_anterior else "archivo desconocido"
-     reemplazar = messagebox.askyesno(
-        "⚠️ Entrega duplicada detectada",
-        f"Archivo actual: {nombre_anterior}\n\n¿Deseas reemplazarlo con el nuevo archivo?"
-    )
+    # --- SOLUCIÓN AL ERROR 'reemplazar' ---
+    # Inicializamos siempre en True para que las tareas NUEVAS funcionen.
+    reemplazar = True 
+
+    # Solo si la tarea YA EXISTE en la BD, preguntamos al usuario.
+    if verificar_entrega_existente(id_t, id_a):
+        reemplazar = messagebox.askyesno("Confirmación", "Ya existe una entrega previa. ¿Deseas reemplazarla?")
+    
+    # Si el usuario dice que NO a reemplazar, cancelamos todo.
     if not reemplazar:
-        return
+        return 
+    # --------------------------------------
 
+    # Crear carpeta de subidas si no existe
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-    nombre_archivo = os.path.basename(selected_file_path)
-    destino = os.path.join(UPLOAD_FOLDER, f"tarea_{id_tarea}_alumno_{id_alumno}_{nombre_archivo}")
-
     try:
+        # Generar nombre de archivo y ruta de destino
+        extension = os.path.splitext(selected_file_path)[1]
+        nombre_final = f"Tarea_{id_t}_Alumno_{id_a}{extension}"
+        destino = os.path.join(UPLOAD_FOLDER, nombre_final)
+
+        # Copiar archivo físicamente
         shutil.copy2(selected_file_path, destino)
+        
+        # Calcular peso en KB para la columna 'peso_archivo_kb'
         peso_kb = round(os.path.getsize(destino) / 1024, 2)
 
-        exito = guardar_entrega(id_tarea, id_alumno, destino, peso_kb)
+        # 3. GUARDAR EN BD: Enviamos peso_kb a la columna correcta
+        exito = guardar_entrega(id_t, id_a, destino, peso_kb)
+
         if exito:
-            messagebox.showinfo("Éxito", "El archivo se subió correctamente y la entrega quedó registrada.")
-            entry_id_tarea.delete(0, tk.END)
-            entry_id_alumno.delete(0, tk.END)
+            messagebox.showinfo("Éxito", "¡Tarea subida correctamente!")
+            # Limpiar campos
             label_archivo.config(text="Ningún archivo seleccionado")
             selected_file_path = None
             boton_subir.config(state="disabled")
+            entry_id_tarea.delete(0, tk.END)
+            entry_id_alumno.delete(0, tk.END)
         else:
-            messagebox.showerror("Error", "Ocurrió un problema al guardar la entrega en la base de datos.")
-    except Exception as e:
-        messagebox.showerror("Error de archivo", f"No se pudo copiar el archivo: {e}")
+            messagebox.showerror("Error de BD", "Hubo un problema al persistir los datos en SQL.")
 
+    except Exception as e:
+        messagebox.showerror("Error Crítico", f"No se pudo completar la operación: {e}")
 
 def abrir_vista_entrega_estudiante():
     global selected_file_path
