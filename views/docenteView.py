@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import sys
 import os
+import threading # <-- 1. Importamos threading para procesos en segundo plano
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from formularioTarea import abrir_formulario_tarea
@@ -9,6 +10,7 @@ from config.conexion_bd import traer_tareas
 from evaluacionDocente import abrir_evaluacion_docente
 from rounded_button import RoundedButton
 from controllers.alertas_docente import verificar_alertas_docente
+from services.servicio_correo import enviar_reporte_docente # <-- 2. Importamos el servicio de correo
 
 def abrir_panel_docente():
     ventana = tk.Toplevel()
@@ -73,3 +75,26 @@ def abrir_panel_docente():
 
     # --- UBICACIÓN CORRECTA DE LA ALERTA ---
     ventana.after(600, verificar_alertas_docente)
+
+    # ==========================================
+    # 3. BLOQUE DE ENVÍO DE CORREO AUTOMÁTICO
+    # ==========================================
+    
+    # ⚠️ IMPORTANTE: Aquí debes poner el correo real del docente.
+    # Si más adelante implementas un login, deberás pasar el correo 
+    # como parámetro a la función abrir_panel_docente(correo_usuario)
+    correo_del_docente = "correo_del_docente@gmail.com"
+
+    def tarea_enviar_correo():
+        # Ejecutamos la función que se conecta a Gmail
+        exito = enviar_reporte_docente(correo_del_docente)
+        if exito:
+            print("✅ Notificación de fondo: Correo de reporte enviado al docente.")
+        else:
+            print("ℹ️ Notificación de fondo: No se envió correo (no hay tareas o falló la conexión).")
+
+    # Creamos el Hilo y lo iniciamos
+    hilo_correo = threading.Thread(target=tarea_enviar_correo)
+    hilo_correo.daemon = True # Asegura que el hilo muera si se cierra el programa
+    hilo_correo.start()
+    # ==========================================
