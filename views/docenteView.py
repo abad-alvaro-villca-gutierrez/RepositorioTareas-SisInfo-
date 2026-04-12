@@ -8,7 +8,7 @@ from formularioTarea import abrir_formulario_tarea
 from config.conexion_bd import traer_tareas
 from evaluacionDocente import abrir_evaluacion_docente
 from rounded_button import RoundedButton
-
+from controllers.alertas_docente import verificar_alertas_docente
 
 def abrir_panel_docente():
     ventana = tk.Toplevel()
@@ -72,4 +72,4 @@ def abrir_panel_docente():
         tabla.insert("", "end", values=(nombre, puntaje, fecha, estado))
 
     # --- UBICACIÓN CORRECTA DE LA ALERTA ---
-   
+    ventana.after(600, verificar_alertas_docente)
