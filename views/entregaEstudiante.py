@@ -4,13 +4,13 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import shutil
 
-# 1. AJUSTE DE RUTA: Esto permite que Python vea la carpeta 'config'
+# 1. AJUSTE DE RUTA
 directorio_actual = os.path.dirname(__file__)
 directorio_padre = os.path.abspath(os.path.join(directorio_actual, '..'))
 if directorio_padre not in sys.path:
     sys.path.append(directorio_padre)
 
-# 2. IMPORTACIÓN CORREGIDA: Agregamos 'verificar_entrega_existente' a la lista
+# 2. IMPORTACIONES
 try:
     from config.conexion_bd import (
         guardar_entrega, 
@@ -21,193 +21,160 @@ try:
 except ImportError as e:
     print(f"Error importando módulos: {e}")
 
-# ... resto de tus variables globales (ALLOWED_EXTENSIONS, etc.)
-from rounded_button import RoundedButton
+# Importación de tu clase personalizada
+# from rounded_button import RoundedButton 
 
 ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx", ".zip", ".rar", ".png", ".jpg", ".jpeg"]
 MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'uploads'))
 
-selected_file_path = None
+# Asegurar que la carpeta de destino existe
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
+# VARIABLE GLOBAL PARA ALMACENAR LAS RUTAS
+selected_files_paths = [] 
 
-def seleccionar_archivo(label_archivo, boton_subir):
-    global selected_file_path
-
-    archivo = filedialog.askopenfilename(
-        title="Seleccionar archivo de entrega",
+def seleccionar_archivos(label_archivo, btn_subir):
+    """
+    Permite al usuario seleccionar uno o varios archivos y actualiza la interfaz.
+    """
+    global selected_files_paths
+    
+    files = filedialog.askopenfilenames(
+        title="Seleccionar archivos para la entrega",
         filetypes=[
-            ("Documentos y archivos", "*.pdf *.doc *.docx *.zip *.rar *.png *.jpg *.jpeg"),
+            ("Archivos permitidos", "*.pdf *.doc *.docx *.zip *.rar *.png *.jpg *.jpeg"),
             ("Todos los archivos", "*.*")
         ]
     )
+    
+    if files:
+        # Validar tamaño de cada archivo antes de aceptarlos
+        archivos_validos = []
+        for f in files:
+            if os.path.getsize(f) <= MAX_FILE_SIZE_BYTES:
+                archivos_validos.append(f)
+            else:
+                messagebox.showwarning("Archivo muy pesado", f"El archivo {os.path.basename(f)} excede los 5MB y será omitido.")
 
-    if not archivo:
-        return
+        selected_files_paths = archivos_validos
+        cantidad = len(selected_files_paths)
+        
+        if cantidad == 1:
+            nombre_archivo = os.path.basename(selected_files_paths[0])
+            label_archivo.config(text=f"Seleccionado: {nombre_archivo}", fg="green")
+        elif cantidad > 1:
+            label_archivo.config(text=f"✓ {cantidad} archivos listos para subir", fg="green")
+        else:
+            label_archivo.config(text="Ningún archivo válido seleccionado", fg="red")
+            btn_subir.config(state="disabled")
+            return
 
-    extension = os.path.splitext(archivo)[1].lower()
-    if extension not in ALLOWED_EXTENSIONS:
-        messagebox.showerror("Extensión inválida", "Solo se permiten archivos PDF, DOC/DOCX, ZIP, RAR, PNG y JPG.")
-        selected_file_path = None
-        label_archivo.config(text="📄 Ningún archivo seleccionado", fg="#888")
-        boton_subir.config(state="disabled")
-        return
+        btn_subir.config(state="normal")
+    else:
+        # Si el usuario cancela y no había nada antes
+        if not selected_files_paths:
+            label_archivo.config(text="Ningún archivo seleccionado", fg="red")
+            btn_subir.config(state="disabled")
 
-    tamaño = os.path.getsize(archivo)
-    if tamaño > MAX_FILE_SIZE_BYTES:
-        messagebox.showerror("Archivo muy grande", "El archivo supera el límite de 5 MB. Elige uno más pequeño.")
-        selected_file_path = None
-        label_archivo.config(text="📄 Ningún archivo seleccionado", fg="#888")
-        boton_subir.config(state="disabled")
-        return
-
-    selected_file_path = archivo
-    nombre_archivo = os.path.basename(archivo)
-    tamaño_kb = round(tamaño / 1024, 2)
-    label_archivo.config(text=f"✓ {nombre_archivo} ({tamaño_kb} KB)", fg="#2D4A3E")
-    boton_subir.config(state="normal")
-
-
-def subir_entrega(entry_id_tarea, entry_id_alumno, label_archivo, boton_subir):
-    global selected_file_path
-
-    # Leer IDs
+def subir_entrega(entry_id_tarea, entry_id_alumno, label_archivo, btn_subir):
+    global selected_files_paths
+    
     id_t = entry_id_tarea.get().strip()
     id_a = entry_id_alumno.get().strip()
 
-    # Validaciones básicas
-    if not id_t or not id_a:
-        messagebox.showwarning("Campos vacíos", "Por favor ingresa el ID de Tarea y el ID de Alumno.")
+    if not id_t or not id_a or not selected_files_paths:
+        messagebox.showwarning("Faltan datos", "Ingresa IDs y selecciona al menos un archivo.")
         return
 
-    if not selected_file_path:
-        messagebox.showwarning("Falta archivo", "Debes seleccionar un archivo primero.")
-        return
-
-    # --- SOLUCIÓN AL ERROR 'reemplazar' ---
-    # Inicializamos siempre en True para que las tareas NUEVAS funcionen.
-    reemplazar = True 
-
-    # Solo si la tarea YA EXISTE en la BD, preguntamos al usuario.
+    # Verificar si ya existe alguna entrega para este alumno/tarea
     if verificar_entrega_existente(id_t, id_a):
-        reemplazar = messagebox.askyesno("Confirmación", "Ya existe una entrega previa. ¿Deseas reemplazarla?")
-    
-    # Si el usuario dice que NO a reemplazar, cancelamos todo.
-    if not reemplazar:
-        return 
-    # --------------------------------------
+        reemplazar = messagebox.askyesno("Confirmación", "Ya existen entregas previas. ¿Deseas agregar estos archivos?")
+        if not reemplazar:
+            return 
 
-    # Crear carpeta de subidas si no existe
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    exitos = 0
+    for ruta_origen in selected_files_paths:
+        try:
+            nombre_base = os.path.basename(ruta_origen)
+            # Creamos un nombre único para evitar colisiones entre alumnos
+            nombre_final = f"T{id_t}_A{id_a}_{nombre_base}"
+            destino = os.path.join(UPLOAD_FOLDER, nombre_final)
 
-    try:
-        # Generar nombre de archivo y ruta de destino
-        extension = os.path.splitext(selected_file_path)[1]
-        nombre_final = f"Tarea_{id_t}_Alumno_{id_a}{extension}"
-        destino = os.path.join(UPLOAD_FOLDER, nombre_final)
+            # Copiar archivo
+            shutil.copy2(ruta_origen, destino)
+            
+            # Peso en KB
+            peso_kb = round(os.path.getsize(destino) / 1024, 2)
 
-        # Copiar archivo físicamente
-        shutil.copy2(selected_file_path, destino)
+            # Guardar en BD
+            if guardar_entrega(id_t, id_a, destino, peso_kb):
+                exitos += 1
+
+        except Exception as e:
+            print(f"Error al subir {nombre_base}: {e}")
+
+    if exitos > 0:
+        messagebox.showinfo("Éxito", f"Se han procesado {exitos} archivos correctamente.")
         
-        # Calcular peso en KB para la columna 'peso_archivo_kb'
-        peso_kb = round(os.path.getsize(destino) / 1024, 2)
-
-        # 3. GUARDAR EN BD: Enviamos peso_kb a la columna correcta
-        exito = guardar_entrega(id_t, id_a, destino, peso_kb)
-
-        if exito:
-            messagebox.showinfo("Éxito", "¡Tarea subida correctamente!")
-            # Limpiar campos
-            label_archivo.config(text="Ningún archivo seleccionado")
-            selected_file_path = None
-            boton_subir.config(state="disabled")
-            entry_id_tarea.delete(0, tk.END)
-            entry_id_alumno.delete(0, tk.END)
-        else:
-            messagebox.showerror("Error de BD", "Hubo un problema al persistir los datos en SQL.")
-
-    except Exception as e:
-        messagebox.showerror("Error Crítico", f"No se pudo completar la operación: {e}")
+        # Limpiar Interfaz
+        label_archivo.config(text="📄 Ningún archivo seleccionado", fg="#888")
+        selected_files_paths = []
+        btn_subir.config(state="disabled")
+        entry_id_tarea.delete(0, tk.END)
+        entry_id_alumno.delete(0, tk.END)
+    else:
+        messagebox.showerror("Error", "No se pudo subir ningún archivo.")
 
 def abrir_vista_entrega_estudiante():
-    global selected_file_path
-    selected_file_path = None
-
     ventana = tk.Toplevel()
     ventana.title("Subir Entrega - Estudiante")
-    ventana.geometry("500x550")
+    ventana.geometry("500x600")
     ventana.configure(bg="#FFFBF0", padx=20, pady=20)
     ventana.grab_set()
-    ventana.resizable(True, True)
 
-    # Encabezado con color de la paleta
+    # Encabezado
     frame_header = tk.Frame(ventana, bg="#6D4145", padx=15, pady=15)
     frame_header.pack(fill="x", pady=(0, 20))
-    tk.Label(frame_header, text="📥 Recepción de Entrega Digital", font=("Arial", 16, "bold"), 
+    tk.Label(frame_header, text="📥 Recepción de Entrega Digital", font=("Arial", 14, "bold"), 
              bg="#6D4145", fg="#FFEFAE").pack(anchor="w")
 
-    # Frame principal usando grid para mejor control
     frame_main = tk.Frame(ventana, bg="#FFFBF0")
     frame_main.pack(fill="both", expand=True)
-    frame_main.columnconfigure(0, weight=1)
 
-    # ID Tarea
-    tk.Label(frame_main, text="ID Tarea *:", bg="#FFFBF0", fg="#555832", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky="w", pady=(5, 3))
-    entry_id_tarea = tk.Entry(frame_main, bg="white", fg="#333333", bd=1, 
-                              highlightthickness=2, highlightbackground="#96D1AA", highlightcolor="#555832")
-    entry_id_tarea.grid(row=1, column=0, sticky="ew", pady=(0, 12), padx=2)
+    # Entradas
+    tk.Label(frame_main, text="ID Tarea *:", bg="#FFFBF0", fg="#555832", font=("Arial", 10, "bold")).pack(anchor="w")
+    entry_id_tarea = tk.Entry(frame_main, highlightthickness=1, highlightbackground="#96D1AA")
+    entry_id_tarea.pack(fill="x", pady=(0, 10))
 
-    # ID Alumno
-    tk.Label(frame_main, text="ID Alumno *:", bg="#FFFBF0", fg="#555832", font=("Arial", 10, "bold")).grid(row=2, column=0, sticky="w", pady=(5, 3))
-    entry_id_alumno = tk.Entry(frame_main, bg="white", fg="#333333", bd=1, 
-                               highlightthickness=2, highlightbackground="#96D1AA", highlightcolor="#555832")
-    entry_id_alumno.grid(row=3, column=0, sticky="ew", pady=(0, 12), padx=2)
+    tk.Label(frame_main, text="ID Alumno *:", bg="#FFFBF0", fg="#555832", font=("Arial", 10, "bold")).pack(anchor="w")
+    entry_id_alumno = tk.Entry(frame_main, highlightthickness=1, highlightbackground="#96D1AA")
+    entry_id_alumno.pack(fill="x", pady=(0, 10))
 
-    # Archivo seleccionado
-    tk.Label(frame_main, text="Archivo seleccionado:", bg="#FFFBF0", fg="#555832", font=("Arial", 10, "bold")).grid(row=4, column=0, sticky="w", pady=(10, 5))
+    # Etiqueta de estado de archivo
     label_archivo = tk.Label(frame_main, text="📄 Ningún archivo seleccionado", fg="#888", bg="#F5F1E8", 
-                             font=("Arial", 10), padx=10, pady=10, wraplength=400, justify="left")
-    label_archivo.grid(row=5, column=0, sticky="ew", pady=(0, 12), padx=2)
+                             font=("Arial", 9), padx=10, pady=10, wraplength=400)
+    label_archivo.pack(fill="x", pady=10)
 
-    # Botón Seleccionar
-    btn_seleccionar = RoundedButton(
-        frame_main,
-        text="📁 Seleccionar archivo",
-        command=lambda: seleccionar_archivo(label_archivo, btn_subir),
-        bg="#96D1AA",
-        fg="#2D4A3E",
-        activebackground="#79B8A0",
-        activeforeground="#2D4A3E",
-        font=("Arial", 11, "bold"),
-        padx=15,
-        pady=10,
-        cursor="hand2",
+    # Botones (Usando tk.Button por compatibilidad, cambia a RoundedButton si lo tienes activo)
+    btn_seleccionar = tk.Button(
+        frame_main, text="📁 Seleccionar archivos", 
+        command=lambda: seleccionar_archivos(label_archivo, btn_subir),
+        bg="#96D1AA", fg="#2D4A3E", font=("Arial", 10, "bold"), pady=5
     )
-    btn_seleccionar.grid(row=6, column=0, sticky="ew", pady=(0, 10), padx=2)
+    btn_seleccionar.pack(fill="x", pady=5)
 
-    # Botón Subir
-    btn_subir = RoundedButton(
-        frame_main,
-        text="✓ Subir Entrega",
+    btn_subir = tk.Button(
+        frame_main, text="✓ Subir Entrega", 
         command=lambda: subir_entrega(entry_id_tarea, entry_id_alumno, label_archivo, btn_subir),
-        bg="#FFEFAE",
-        fg="#555832",
-        activebackground="#FFE589",
-        activeforeground="#555832",
-        font=("Arial", 11, "bold"),
-        padx=15,
-        pady=10,
-        cursor="hand2",
-        state="disabled",
+        bg="#FFEFAE", fg="#555832", font=("Arial", 10, "bold"), pady=5, state="disabled"
     )
-    btn_subir.grid(row=7, column=0, sticky="ew", pady=(0, 15), padx=2)
+    btn_subir.pack(fill="x", pady=5)
 
-    # Información sobre extensiones y límite
-    frame_info = tk.Frame(ventana, bg="#555832", padx=12, pady=10)
-    frame_info.pack(fill="x")
-    tk.Label(frame_info, text="✓ PDF, DOC, DOCX, ZIP, RAR, PNG, JPG", 
-             font=("Arial", 9), bg="#555832", fg="#FFEFAE", wraplength=450, justify="left").pack(anchor="w", pady=2)
-    tk.Label(frame_info, text="✓ Tamaño máximo: 5 MB", 
-             font=("Arial", 9), bg="#555832", fg="#FFEFAE", wraplength=450, justify="left").pack(anchor="w", pady=2) 
+    # Footer Info
+    frame_info = tk.Frame(ventana, bg="#555832", padx=10, pady=10)
+    frame_info.pack(fill="x", side="bottom")
+    tk.Label(frame_info, text="Formatos: PDF, DOCX, ZIP, JPG | Máx: 5MB", 
+             font=("Arial", 8), bg="#555832", fg="#FFEFAE").pack()
 
