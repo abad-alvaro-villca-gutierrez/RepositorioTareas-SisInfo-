@@ -84,13 +84,13 @@ def abrir_formulario_tarea():
 
     # --- BOTONES ---
     # Botón Borrador (Pasa la referencia 'ventana' para poder cerrarla después)
-    btn_borrador = RoundedButton(ventana, text="📁 Guardar Borrador", bg="#6c757d", fg="white", 
+    btn_borrador = RoundedButton(ventana, text="� Guardar Borrador", bg="#6c757d", fg="white", 
                                   font=("Segoe UI", 10, "bold"), 
                                   command=lambda: procesar_formulario(ventana, "Borrador"))
     btn_borrador.pack(fill="x", pady=5)
 
     # Botón Publicar
-    btn_publicar = RoundedButton(ventana, text="🚀 Publicar Tarea", bg="#28a745", fg="white", 
+    btn_publicar = RoundedButton(ventana, text="� Publicar Tarea", bg="#28a745", fg="white", 
                                   font=("Segoe UI", 10, "bold"), 
                                   command=lambda: procesar_formulario(ventana, "Publicada"))
     btn_publicar.pack(fill="x", pady=5)

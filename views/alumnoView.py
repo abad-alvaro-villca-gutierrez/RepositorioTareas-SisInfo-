@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, simpledialog, messagebox
 import sys
 import os
 from datetime import date
@@ -8,9 +8,22 @@ from datetime import date
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 from entregaEstudiante import abrir_vista_entrega_estudiante
+from notificacionesAlumno import abrir_notificaciones_alumno
 from config.conexion_bd import traer_tareas
 from rounded_button import RoundedButton
 from lista_tareas_sistema import abrir_lista_tareas
+
+def abrir_notificaciones_con_id(ventana_padre):
+    """Solicita el ID del alumno y abre la ventana de notificaciones (T5.4)."""
+    id_alumno = simpledialog.askstring("Mis Notificaciones", 
+                                       "Ingresa tu ID de alumno:",
+                                       parent=ventana_padre)
+    if id_alumno and id_alumno.strip():
+        try:
+            int(id_alumno.strip())  # Validar que sea número
+            abrir_notificaciones_alumno(int(id_alumno.strip()))
+        except ValueError:
+            messagebox.showerror("Error", "El ID debe ser un número válido")
 
 def abrir_panel_alumno():
     ventana = tk.Toplevel()
@@ -45,6 +58,10 @@ def abrir_panel_alumno():
                   command=abrir_lista_tareas, font=("Segoe UI", 11, "bold"),
                   padx=20, pady=10).pack(side="left", padx=5)
 
+    RoundedButton(frame_acciones, text="🔔 MIS NOTIFICACIONES", bg="#96D1AA", fg="#2D4A3E",
+                  command=lambda: abrir_notificaciones_con_id(ventana), font=("Segoe UI", 11, "bold"),
+                  padx=20, pady=10).pack(side="left", padx=5)
+
     # --- LISTA DE TAREAS CON SCROLL ---
     container_canvas = tk.Frame(ventana, bg="#F5F1E8")
     container_canvas.pack(fill="both", expand=True)
@@ -75,8 +92,8 @@ def abrir_panel_alumno():
     # --- CARGA DE DATOS ---
     tareas = traer_tareas()
     
-    # Filtramos solo las tareas con estado "Publicada" (el estado está en t[4])
-    tareas_publicas = [t for t in tareas if len(t) > 5 and t[4] == "Publicada"]
+    # Filtramos solo las tareas con estado "Publicada" (el estado está en t[5])
+    tareas_publicas = [t for t in tareas if len(t) > 5 and t[5] == "Publicada"]
 
     if not tareas_publicas:
         tk.Label(frame_lista, text="No hay tareas publicadas por ahora. ✨", bg="#F5F1E8", 
@@ -88,7 +105,7 @@ def abrir_panel_alumno():
             nombre_tarea = t[1]
             descripcion  = t[2]
             puntaje      = t[3]
-            fecha_bd     = t[5]
+            fecha_bd     = t[4]
             
             hoy = date.today()
             

@@ -4,7 +4,12 @@ from datetime import datetime, date
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Agregar directorios necesarios al path
+directorio_actual = os.path.dirname(__file__)
+directorio_padre = os.path.abspath(os.path.join(directorio_actual, '..'))
+sys.path.insert(0, directorio_actual)
+sys.path.insert(0, directorio_padre)
+
 from config.conexion_bd import traer_alumnos, traer_tareas_pendientes
 from rounded_button import RoundedButton
 
