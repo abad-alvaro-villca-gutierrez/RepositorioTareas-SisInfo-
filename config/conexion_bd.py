@@ -258,3 +258,51 @@ def traer_tareas_vencidas():
     except Exception as e:
         print(f"❌ Error al buscar tareas vencidas: {e}")
         return []
+
+# ==========================================
+# SECCIÓN: ALUMNOS Y TAREAS PENDIENTES
+# ==========================================
+
+# 10. TRAER TODOS LOS ALUMNOS
+def traer_alumnos():
+    try:
+        conn = conectar()
+        if conn is None: return []
+        
+        cursor = conn.cursor()
+        query = "SELECT id_alumno, nombre_alumno FROM Alumnos ORDER BY nombre_alumno ASC"
+        cursor.execute(query)
+        
+        datos = cursor.fetchall()
+        conn.close()
+        
+        return [list(fila) for fila in datos]
+    except Exception as e:
+        print(f"❌ Error al traer alumnos: {e}")
+        return []
+
+# 11. TRAER TAREAS PENDIENTES DE UN ALUMNO (Las que NO ha entregado)
+def traer_tareas_pendientes(id_alumno):
+    try:
+        conn = conectar()
+        if conn is None: return []
+        
+        cursor = conn.cursor()
+        query = """
+            SELECT t.id_tarea, t.nombre_tarea, t.descripcion, t.puntaje, t.fecha_vencimiento, t.estado
+            FROM Tareas t
+            WHERE t.estado = 'Publicada'
+            AND t.id_tarea NOT IN (
+                SELECT id_tarea FROM Entregas WHERE id_alumno = ?
+            )
+            ORDER BY t.fecha_vencimiento ASC
+        """
+        cursor.execute(query, (id_alumno,))
+        
+        datos = cursor.fetchall()
+        conn.close()
+        
+        return [list(fila) for fila in datos]
+    except Exception as e:
+        print(f"❌ Error al traer tareas pendientes: {e}")
+        return []
