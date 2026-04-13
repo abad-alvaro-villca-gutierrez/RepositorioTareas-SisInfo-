@@ -9,7 +9,7 @@ def conectar():
         conn = pyodbc.connect(
              "DRIVER={ODBC Driver 17 for SQL Server};"
             "SERVER=localhost;" 
-            "DATABASE=SistemaTareas;" 
+            "DATABASE=localhost;" 
             "Trusted_Connection=yes;"
             "Encrypt=no;"
             "TrustServerCertificate=yes;"
