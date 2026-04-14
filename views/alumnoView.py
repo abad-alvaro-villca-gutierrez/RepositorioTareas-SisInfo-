@@ -14,7 +14,7 @@ from rounded_button import RoundedButton
 from lista_tareas_sistema import abrir_lista_tareas
 
 def abrir_notificaciones_con_id(ventana_padre):
-    """Solicita el ID del alumno y abre la ventana de notificaciones (T5.4)."""
+    """Solicita el ID del alumno y abre la ventana de notificaciones."""
     id_alumno = simpledialog.askstring("Mis Notificaciones", 
                                        "Ingresa tu ID de alumno:",
                                        parent=ventana_padre)
@@ -24,6 +24,18 @@ def abrir_notificaciones_con_id(ventana_padre):
             abrir_notificaciones_alumno(int(id_alumno.strip()))
         except ValueError:
             messagebox.showerror("Error", "El ID debe ser un número válido")
+
+def abrir_entrega_rapida(ventana_padre):
+    """Solicita el ID de la tarea y usa el alumno 1 por defecto"""
+    id_tarea = simpledialog.askstring("Entrega Rápida", 
+                                      "Ingresa el ID de la tarea a entregar:",
+                                      parent=ventana_padre)
+    if id_tarea and id_tarea.strip():
+        try:
+            id_tarea_int = int(id_tarea.strip())
+            abrir_vista_entrega_estudiante(id_tarea_int, 1)
+        except ValueError:
+            messagebox.showerror("Error", "El ID de la tarea debe ser un número válido")
 
 def abrir_panel_alumno():
     ventana = tk.Toplevel()
@@ -35,9 +47,9 @@ def abrir_panel_alumno():
     frame_header = tk.Frame(ventana, bg="#6D4145", padx=25, pady=25)
     frame_header.pack(fill="x", pady=(0, 20))
     
-    tk.Label(frame_header, text="Mis Tareas Pendientes", font=("Segoe UI", 26, "bold"), 
+    tk.Label(frame_header, text="Mis Tareas", font=("Segoe UI", 26, "bold"), 
              bg="#6D4145", fg="#FFEFAE").pack(anchor="w")
-    tk.Label(frame_header, text="Selecciona una tarea para adjuntar tu archivo", font=("Segoe UI", 11), 
+    tk.Label(frame_header, text="Gestiona tus entregas y actualiza tus archivos", font=("Segoe UI", 11), 
              bg="#6D4145", fg="#F5F1E8").pack(anchor="w", pady=(5, 0))
 
     # --- INDICADOR DE INFORMACIÓN ---
@@ -51,7 +63,7 @@ def abrir_panel_alumno():
     frame_acciones.pack(fill="x", pady=(0, 10))
 
     RoundedButton(frame_acciones, text="📤 Subir Entrega Rápida", bg="#555832", fg="#FFEFAE", 
-                  command=abrir_vista_entrega_estudiante, font=("Segoe UI", 11, "bold"),
+                  command=lambda: abrir_entrega_rapida(ventana), font=("Segoe UI", 11, "bold"),
                   padx=20, pady=10).pack(side="left", padx=5)
 
     RoundedButton(frame_acciones, text="📋 VER TODAS LAS TAREAS", bg="#FFEFAE", fg="#555832",
@@ -92,33 +104,33 @@ def abrir_panel_alumno():
     # --- CARGA DE DATOS ---
     tareas = traer_tareas()
     
-    # Filtramos solo las tareas con estado "Publicada" (el estado está en t[5])
-    tareas_publicas = [t for t in tareas if len(t) > 5 and t[5] == "Publicada"]
+    # Filtramos tareas que estén Publicadas O ya Entregadas
+    tareas_visibles = [t for t in tareas if len(t) > 5 and t[5] in ["Publicada", "Entregada"]]
 
-    if not tareas_publicas:
-        tk.Label(frame_lista, text="No hay tareas publicadas por ahora. ✨", bg="#F5F1E8", 
+    if not tareas_visibles:
+        tk.Label(frame_lista, text="No hay tareas disponibles por ahora. ✨", bg="#F5F1E8", 
                  font=("Segoe UI", 14), fg="#6D4145").pack(pady=60)
     else:
-        for t in tareas_publicas:
-            # MAPEO CORRECTO EN BASE A LA CONSULTA SQL ACTUAL
-            # [0: id_tarea, 1: nombre_tarea, 2: descripcion, 3: puntaje, 4: estado, 5: fecha_vencimiento]
+        for t in tareas_visibles:
+            id_tarea_actual = t[0]
             nombre_tarea = t[1]
             descripcion  = t[2]
             puntaje      = t[3]
             fecha_bd     = t[4]
+            estado_tarea = t[5]
             
             hoy = date.today()
-            
-            # Nos aseguramos de que lo que venga de BD se trate como fecha pura
             fecha_limite = fecha_bd.date() if hasattr(fecha_bd, 'date') else fecha_bd
             
-            # Verificación de seguridad por si alguna fecha en BD es Nula
+            esta_vencida = False
             if isinstance(fecha_limite, date):
                 esta_vencida = fecha_limite < hoy
-            else:
-                esta_vencida = False
                 
-            color_acento = "#FF5252" if esta_vencida else "#96D1AA"
+            # Color lateral
+            if estado_tarea == "Entregada":
+                color_acento = "#4CAF50" # Verde éxito
+            else:
+                color_acento = "#FF5252" if esta_vencida else "#96D1AA"
 
             # --- CARD ---
             card = tk.Frame(frame_lista, bg="#FFFFFF", highlightbackground="#E0DBCF", highlightthickness=1)
@@ -150,13 +162,31 @@ def abrir_panel_alumno():
             tk.Label(footer, text=f"{vence_icono} Vence: {fecha_limite}", 
                      font=("Segoe UI", 10, "bold"), bg="#FFFFFF", fg=vence_color).pack(side="left")
 
-            if esta_vencida:
+            # --- LÓGICA DE BOTONES ---
+            if esta_vencida and estado_tarea != "Entregada":
                 RoundedButton(card, text="🔒 Plazo Vencido", bg="#EEEEEE", fg="#9E9E9E",
                               command=lambda: None, font=("Segoe UI", 10, "bold"),
                               padx=15, pady=8).pack(side="right", padx=20)
+            
+            elif estado_tarea == "Entregada":
+                # CONTENEDOR PARA LOS BOTONES DE TAREA ENTREGADA
+                frame_botones_entrega = tk.Frame(card, bg="#FFFFFF")
+                frame_botones_entrega.pack(side="right", padx=20)
+
+                tk.Label(frame_botones_entrega, text="✅ ENTREGADO", font=("Segoe UI", 10, "bold"), 
+                         bg="#FFFFFF", fg="#2E7D32").pack(side="top", pady=(0, 5))
+
+                # BOTÓN PARA REEMPLAZAR (Llamamos a la misma función pero con color diferente)
+                RoundedButton(frame_botones_entrega, text="🔄 Reemplazar", bg="#E3F2FD", fg="#1976D2",
+                              command=lambda id_t=id_tarea_actual: abrir_vista_entrega_estudiante(id_t, 1), 
+                              font=("Segoe UI", 9, "bold"),
+                              padx=10, pady=5, cursor="hand2").pack(side="bottom")
+            
             else:
+                # Botón normal de primera subida
                 RoundedButton(card, text="📤 Subir Entrega", bg="#FFEFAE", fg="#555832",
-                              command=abrir_vista_entrega_estudiante, font=("Segoe UI", 10, "bold"),
+                              command=lambda id_t=id_tarea_actual: abrir_vista_entrega_estudiante(id_t, 1), 
+                              font=("Segoe UI", 10, "bold"),
                               activebackground="#FFE589", activeforeground="#555832",
                               padx=15, pady=8, cursor="hand2").pack(side="right", padx=20)
 

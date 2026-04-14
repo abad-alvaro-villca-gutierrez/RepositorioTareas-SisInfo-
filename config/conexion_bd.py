@@ -94,14 +94,14 @@ def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_decimal):
         if existe_entrega(id_tarea, id_alumno):
             query = """
                 UPDATE Entregas 
-                SET ruta_archivo = ?, peso_archivo = ?, fecha_entrega = GETDATE() 
+                SET ruta_archivo = ?, peso_archivo_kb = ?, fecha_entrega = GETDATE() 
                 WHERE id_tarea = ? AND id_alumno = ?
             """
             cursor.execute(query, (ruta_archivo, peso_decimal, id_tarea, id_alumno))
             mensaje_notificacion = f"Tu entrega de la tarea {id_tarea} ha sido reemplazada y guardada correctamente."
         else:
             query = """
-                INSERT INTO Entregas (id_tarea, id_alumno, ruta_archivo, peso_archivo) 
+                INSERT INTO Entregas (id_tarea, id_alumno, ruta_archivo, peso_archivo_kb) 
                 VALUES (?, ?, ?, ?)
             """
             cursor.execute(query, (id_tarea, id_alumno, ruta_archivo, peso_decimal))
@@ -397,3 +397,24 @@ def marcar_correo_enviado(ids_tareas):
     except Exception as e:
         print(f"❌ Error al actualizar bandera de correos: {e}")
         return False
+    
+def marcar_tarea_entregada(id_tarea):
+    """
+    Cambia el estado de una tarea a 'Entregada' en la base de datos.
+    """
+    conexion = conectar() # Asegúrate de que tu función de conexión se llame así
+    if conexion:
+        try:
+            cursor = conexion.cursor()
+            # ⚠️ Verifica que el nombre de tu tabla sea 'Tareas' y la columna 'estado'
+            query = "UPDATE Tareas SET estado = 'Entregada' WHERE id_tarea = ?"
+            cursor.execute(query, (id_tarea,))
+            conexion.commit()
+            print(f"✅ Tarea {id_tarea} marcada como entregada en la BD.")
+            return True
+        except Exception as e:
+            print(f"❌ Error al marcar tarea como entregada: {e}")
+            return False
+        finally:
+            conexion.close()
+    return False
