@@ -349,3 +349,29 @@ def verificar_entrega_existente(id_tarea, id_alumno):
     Verifica si ya existe una entrega para una tarea/alumno específico.
     """
     return existe_entrega(id_tarea, id_alumno)
+
+
+
+# OBTENER ALUMNOS QUE ENTREGARON A TIEMPO
+def alumnos_entregaron_a_tiempo(id_tarea):
+    try:
+        conn = conectar()
+        if conn is None:
+            return []
+
+        cursor = conn.cursor()
+        query = """
+            SELECT e.id_alumno, e.fecha_entrega, t.fecha_vencimiento
+            FROM Entregas e
+            JOIN Tareas t ON e.id_tarea = t.id_tarea
+            WHERE e.id_tarea = ?
+            AND e.fecha_entrega <= t.fecha_vencimiento
+            ORDER BY e.fecha_entrega ASC
+        """
+        cursor.execute(query, (id_tarea,))
+        datos = cursor.fetchall()
+        conn.close()
+        return [list(fila) for fila in datos]
+    except Exception as e:
+        print(f"❌ Error al obtener alumnos a tiempo: {e}")
+        return []
