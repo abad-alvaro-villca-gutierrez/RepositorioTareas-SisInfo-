@@ -1,40 +1,42 @@
 import pyodbc
 
+# ==========================================
 # 1. CONFIGURACIÓN DE LA CONEXIÓN
+# ==========================================
 def conectar():
     try:
+        # Se usa \\SQLEXPRESS para asegurar la conexión local con la instancia de SQL Server
         conn = pyodbc.connect(
             "DRIVER={ODBC Driver 17 for SQL Server};"
-            "SERVER=localhost\\SQLEXPRESS;" 
+            "SERVER=localhost;" 
             "DATABASE=SistemaTareas;" 
             "Trusted_Connection=yes;"
             "Encrypt=no;"
             "TrustServerCertificate=yes;"
         )
-        print("✅ Conexión exitosa")
         return conn
     except Exception as e:
         print(f"❌ Error de conexión: {e}")
         return None
+
 # ==========================================
 # SECCIÓN: TAREAS (DOCENTE)
 # ==========================================
 
-# 2. GUARDAR UNA NUEVA TAREA (Persistencia con Estado)
+# 2. GUARDAR UNA NUEVA TAREA
 def guardar_tarea(nombre, descripcion, puntaje, fecha_vencimiento, estado='Borrador'):
     try:
         conn = conectar()
         if conn is None: return False
         
         cursor = conn.cursor()
-        # Aseguramos que los nombres coincidan con tu tabla física
         query = """
             INSERT INTO Tareas (nombre_tarea, descripcion, puntaje, fecha_vencimiento, estado) 
             VALUES (?, ?, ?, ?, ?)
         """
         cursor.execute(query, (nombre, descripcion, puntaje, fecha_vencimiento, estado))
         
-        conn.commit() # PERSISTENCIA: Guarda los cambios físicamente
+        conn.commit() 
         conn.close()
         return True
     except Exception as e:
@@ -48,14 +50,12 @@ def traer_tareas():
         if conn is None: return []
         
         cursor = conn.cursor()
-        # Seleccionamos las columnas que ya verificamos que existen
         query = "SELECT id_tarea, nombre_tarea, descripcion, puntaje, fecha_vencimiento, estado FROM Tareas ORDER BY id_tarea DESC"
         cursor.execute(query)
         
         datos = cursor.fetchall()
         conn.close()
         
-        # Convertimos los objetos Row a una lista simple de Python
         return [list(fila) for fila in datos]
     except Exception as e:
         print(f"❌ Error al traer tareas: {e}")
@@ -84,7 +84,6 @@ def existe_entrega(id_tarea, id_alumno):
         return False
 
 # 5. GUARDAR O ACTUALIZAR UNA ENTREGA
-# 5. GUARDAR O ACTUALIZAR UNA ENTREGA (Actualizado con peso_archivo)
 def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_decimal):
     try:
         conn = conectar()
@@ -92,9 +91,7 @@ def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_decimal):
         
         cursor = conn.cursor()
         
-        # Verificamos si ya existe para decidir entre UPDATE o INSERT
         if existe_entrega(id_tarea, id_alumno):
-            # Se actualiza la ruta y el nuevo atributo peso_archivo
             query = """
                 UPDATE Entregas 
                 SET ruta_archivo = ?, peso_archivo = ?, fecha_entrega = GETDATE() 
@@ -103,7 +100,6 @@ def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_decimal):
             cursor.execute(query, (ruta_archivo, peso_decimal, id_tarea, id_alumno))
             mensaje_notificacion = f"Tu entrega de la tarea {id_tarea} ha sido reemplazada y guardada correctamente."
         else:
-            # Se inserta la ruta y el peso_archivo por primera vez
             query = """
                 INSERT INTO Entregas (id_tarea, id_alumno, ruta_archivo, peso_archivo) 
                 VALUES (?, ?, ?, ?)
@@ -114,7 +110,7 @@ def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_decimal):
         conn.commit()
         conn.close()
 
-        # Registrar la notificación del alumno cuando la entrega se guarda correctamente
+        # Registrar la notificación del alumno
         try:
             guardar_notificacion_alumno(id_alumno, id_tarea, mensaje_notificacion)
         except Exception as ne:
@@ -122,10 +118,104 @@ def guardar_entrega(id_tarea, id_alumno, ruta_archivo, peso_decimal):
 
         return True
     except Exception as e:
-        # Este error saldría si los nombres de columnas no coinciden con la BD
         print(f"❌ Error al procesar la entrega en BD: {e}")
         return False
 
+# 6. OBTENER ARCHIVO ANTERIOR DE UNA ENTREGA
+def obtener_archivo_anterior(id_tarea, id_alumno):
+    try:
+        conn = conectar()
+        if conn is None: return None
+        
+        cursor = conn.cursor()
+        query = "SELECT ruta_archivo FROM Entregas WHERE id_tarea = ? AND id_alumno = ?"
+        cursor.execute(query, (id_tarea, id_alumno))
+        resultado = cursor.fetchone()
+        conn.close()
+        
+        if resultado and resultado[0]:
+            return resultado[0] 
+        return None
+    except Exception as e:
+        print(f"❌ Error al obtener archivo anterior: {e}")
+        return None
+
+# 7. VERIFICAR ENTREGA EXISTENTE (Alias)
+def verificar_entrega_existente(id_tarea, id_alumno):
+    return existe_entrega(id_tarea, id_alumno)
+
+# ==========================================
+# SECCIÓN: CALIFICACIONES Y PUNTAJES
+# ==========================================
+
+def traer_entregas():
+    try:
+        conn = conectar()
+        if conn is None: return []
+
+        cursor = conn.cursor()
+        query = "SELECT id_entrega, id_tarea, id_alumno, ruta_archivo, fecha_entrega FROM Entregas ORDER BY fecha_entrega DESC"
+        cursor.execute(query)
+        datos = cursor.fetchall()
+        conn.close()
+
+        return [list(fila) for fila in datos]
+    except Exception as e:
+        print(f"❌ Error al traer entregas: {e}")
+        return []
+
+def calificar_entrega(id_entrega, calificacion, retroalimentacion):
+    try:
+        conn = conectar()
+        if conn is None: return False
+
+        cursor = conn.cursor()
+        cursor.execute("SELECT id_tarea, id_alumno FROM Entregas WHERE id_entrega = ?", (id_entrega,))
+        entrega_info = cursor.fetchone()
+
+        if entrega_info is None:
+            conn.close()
+            return False
+
+        id_tarea, id_alumno = entrega_info
+
+        query = """
+            UPDATE Entregas 
+            SET calificacion = ?, comentario_docente = ? 
+            WHERE id_entrega = ?
+        """
+        cursor.execute(query, (calificacion, retroalimentacion, id_entrega))
+
+        conn.commit()
+        conn.close()
+
+        mensaje_notificacion = f"Tu entrega de la tarea {id_tarea} ha sido calificada con {calificacion} puntos."
+        guardar_notificacion_alumno(id_alumno, id_tarea, mensaje_notificacion)
+
+        return True
+    except Exception as e:
+        print(f"❌ Error al calificar la entrega: {e}")
+        return False   
+
+def obtener_puntaje_maximo_tarea(id_tarea):
+    try:
+        conn = conectar()
+        if conn is None: return 100 
+        
+        cursor = conn.cursor()
+        query = "SELECT puntaje FROM Tareas WHERE id_tarea = ?"
+        cursor.execute(query, (id_tarea,))
+        resultado = cursor.fetchone()
+        conn.close()
+        
+        return int(resultado[0]) if resultado and resultado[0] else 100
+    except Exception as e:
+        print(f"❌ Error al obtener puntaje de la tarea: {e}")
+        return 100
+
+# ==========================================
+# SECCIÓN: NOTIFICACIONES ALUMNO
+# ==========================================
 
 def guardar_notificacion_alumno(id_alumno, id_tarea, mensaje, leida=0):
     try:
@@ -142,118 +232,13 @@ def guardar_notificacion_alumno(id_alumno, id_tarea, mensaje, leida=0):
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ Error al guardar notificación del alumno: {e}")
+        print(f"❌ Error al guardar notificación: {e}")
         return False
 
-
-def traer_entregas():
-    """Devuelve lista de entregas con columnas básicas.
-    Cada entrega es una lista: [id_entrega, id_tarea, id_alumno, ruta_archivo, fecha_entrega]
-    """
-    try:
-        conn = conectar()
-        if conn is None:
-            return []
-
-        cursor = conn.cursor()
-        query = "SELECT id_entrega, id_tarea, id_alumno, ruta_archivo, fecha_entrega FROM Entregas ORDER BY fecha_entrega DESC"
-        cursor.execute(query)
-        datos = cursor.fetchall()
-        conn.close()
-
-        return [list(fila) for fila in datos]
-    except Exception as e:
-        print(f"❌ Error al traer entregas: {e}")
-        return []
-
-
-def calificar_entrega(id_entrega, calificacion, retroalimentacion):
-    try:
-        conn = conectar()
-        if conn is None:
-            return False
-
-        cursor = conn.cursor()
-        cursor.execute("SELECT id_tarea, id_alumno FROM Entregas WHERE id_entrega = ?", (id_entrega,))
-        entrega_info = cursor.fetchone()
-
-        if entrega_info is None:
-            print(f"❌ Entrega no encontrada para id_entrega {id_entrega}")
-            conn.close()
-            return False
-
-        id_tarea, id_alumno = entrega_info
-
-        # Actualizamos el registro de entrega en la BD (T-5.2)
-        query = """
-            UPDATE Entregas 
-            SET calificacion = ?, comentario_docente = ? 
-            WHERE id_entrega = ?
-        """
-        cursor.execute(query, (calificacion, retroalimentacion, id_entrega))
-
-        conn.commit()
-        conn.close()
-
-        mensaje_notificacion = f"Tu entrega de la tarea {id_tarea} ha sido calificada con {calificacion} puntos."
-        if not guardar_notificacion_alumno(id_alumno, id_tarea, mensaje_notificacion):
-            print(f"⚠️ No se pudo guardar la notificación del alumno tras calificar la entrega {id_entrega}")
-
-        return True
-    except Exception as e:
-        print(f"❌ Error al calificar la entrega: {e}")
-        return False   
-def obtener_archivo_anterior(id_tarea, id_alumno):
-    """Devuelve la ruta del archivo previamente entregado para poder eliminarlo físicamente."""
-    try:
-        conn = conectar()
-        if conn is None: return None
-        
-        cursor = conn.cursor()
-        query = "SELECT ruta_archivo FROM Entregas WHERE id_tarea = ? AND id_alumno = ?"
-        cursor.execute(query, (id_tarea, id_alumno))
-        resultado = cursor.fetchone()
-        conn.close()
-        
-        if resultado and resultado[0]:
-            return resultado[0] # Retorna solo el texto de la ruta
-        return None
-    except Exception as e:
-        print(f"❌ Error al obtener archivo anterior: {e}")
-        return None
-    
-# 9. OBTENER PUNTAJE MÁXIMO DE UNA TAREA
-def obtener_puntaje_maximo_tarea(id_tarea):
-    """Consulta en la base de datos el puntaje máximo asignado a una tarea específica."""
-    try:
-        conn = conectar()
-        if conn is None: return 100 # Valor por defecto seguro si falla la BD
-        
-        cursor = conn.cursor()
-        query = "SELECT puntaje FROM Tareas WHERE id_tarea = ?"
-        cursor.execute(query, (id_tarea,))
-        resultado = cursor.fetchone()
-        conn.close()
-        
-        if resultado and resultado[0]:
-            return int(resultado[0])
-        return 100
-    except Exception as e:
-        print(f"❌ Error al obtener puntaje de la tarea: {e}")
-        return 100
-
-# ==========================================
-# SECCIÓN: NOTIFICACIONES (T5.4)
-# ==========================================
-
 def traer_notificaciones(id_alumno):
-    """Trae todas las notificaciones de un alumno ordenadas por fecha más reciente.
-    Devuelve lista: [id_notificacion, id_tarea, mensaje, fecha_creacion, leida]
-    """
     try:
         conn = conectar()
-        if conn is None:
-            return []
+        if conn is None: return []
         
         cursor = conn.cursor()
         query = """
@@ -272,11 +257,9 @@ def traer_notificaciones(id_alumno):
         return []
 
 def marcar_notificacion_leida(id_notificacion):
-    """Marca una notificación como leída (leida = 1)."""
     try:
         conn = conectar()
-        if conn is None:
-            return False
+        if conn is None: return False
         
         cursor = conn.cursor()
         query = "UPDATE Notificaciones SET leida = 1 WHERE id_notificacion = ?"
@@ -289,20 +272,15 @@ def marcar_notificacion_leida(id_notificacion):
         return False
 
 # ==========================================
-# SECCIÓN: ALUMNOS (LISTA TAREAS SISTEMA)
+# SECCIÓN: GESTIÓN DE ALUMNOS
 # ==========================================
 
 def traer_alumnos():
-    """Trae lista de todos los alumnos registrados.
-    Devuelve lista: [id_alumno, nombre_alumno]
-    """
     try:
         conn = conectar()
-        if conn is None:
-            return []
+        if conn is None: return []
         
         cursor = conn.cursor()
-        # Ajusta esta consulta según el nombre de tu tabla de alumnos
         query = "SELECT id_alumno, nombre_alumno FROM Alumnos ORDER BY nombre_alumno"
         cursor.execute(query)
         datos = cursor.fetchall()
@@ -314,16 +292,11 @@ def traer_alumnos():
         return []
 
 def traer_tareas_pendientes(id_alumno):
-    """Trae las tareas que un alumno aún no ha entregado completamente.
-    Devuelve lista: [id_tarea, nombre_tarea, descripcion, puntaje, fecha_vencimiento, estado]
-    """
     try:
         conn = conectar()
-        if conn is None:
-            return []
+        if conn is None: return []
         
         cursor = conn.cursor()
-        # Trae tareas publicadas que el alumno no ha entregado o está pendiente de calificación
         query = """
             SELECT t.id_tarea, t.nombre_tarea, t.descripcion, t.puntaje, t.fecha_vencimiento, t.estado
             FROM Tareas t
@@ -344,8 +317,52 @@ def traer_tareas_pendientes(id_alumno):
         print(f"❌ Error al traer tareas pendientes: {e}")
         return []
 
-def verificar_entrega_existente(id_tarea, id_alumno):
-    """Alias de existe_entrega para compatibilidad con código existente.
-    Verifica si ya existe una entrega para una tarea/alumno específico.
-    """
-    return existe_entrega(id_tarea, id_alumno)
+# ==========================================
+# SECCIÓN: CORREOS AUTOMÁTICOS (ALERTAS)
+# ==========================================
+
+def traer_tareas_vencidas():
+    try:
+        conn = conectar()
+        if conn is None: return []
+        
+        cursor = conn.cursor()
+        # Modificación: Traemos el id_tarea y filtramos por correo_enviado = 0
+        query = """
+            SELECT id_tarea, nombre_tarea, fecha_vencimiento 
+            FROM Tareas 
+            WHERE fecha_vencimiento < CAST(GETDATE() AS DATE) 
+            AND estado = 'Publicada'
+            AND (correo_enviado = 0 OR correo_enviado IS NULL)
+        """
+        cursor.execute(query)
+        
+        datos = cursor.fetchall()
+        conn.close()
+        
+        return [list(fila) for fila in datos]
+    except Exception as e:
+        print(f"❌ Error al buscar tareas vencidas: {e}")
+        return []
+
+def marcar_correo_enviado(ids_tareas):
+    if not ids_tareas:
+        return False
+        
+    try:
+        conn = conectar()
+        if conn is None: return False
+        
+        cursor = conn.cursor()
+        
+        # Creamos los signos de interrogación dinámicamente según cuántas tareas enviemos (?, ?, ?)
+        placeholders = ', '.join('?' for _ in ids_tareas)
+        query = f"UPDATE Tareas SET correo_enviado = 1 WHERE id_tarea IN ({placeholders})"
+        
+        cursor.execute(query, ids_tareas)
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"❌ Error al actualizar bandera de correos: {e}")
+        return False

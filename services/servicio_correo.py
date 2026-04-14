@@ -4,36 +4,31 @@ import sys
 import os
 from dotenv import load_dotenv
 
-# Cargamos las variables del archivo .env al sistema
 load_dotenv() 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from config.conexion_bd import traer_tareas_vencidas
+# ⚠️ Importamos también la nueva función
+from config.conexion_bd import traer_tareas_vencidas, marcar_correo_enviado 
 
 def enviar_reporte_docente(correo_destino):
-    # 1. Obtener los datos de la Base de Datos
     tareas = traer_tareas_vencidas()
     
     if not tareas:
-        print("ℹ️ No hay tareas vencidas para reportar.")
+        print("ℹ️ No hay tareas vencidas nuevas para reportar.")
         return False
 
-    # 2. Leemos las credenciales de forma segura
     remitente = os.getenv("CORREO_SISTEMA")
     password = os.getenv("PASSWORD_CORREO")
 
-    # Filtro de seguridad: verificamos que sí encontró el .env
     if not remitente or not password:
         print("❌ Error: Faltan credenciales en el archivo .env")
         return False
 
-    # 3. Construir el esqueleto del correo
     msg = EmailMessage()
     msg['Subject'] = "Reporte Automático: Tareas Vencidas en el Sistema"
     msg['From'] = remitente
     msg['To'] = correo_destino
     
-    # 4. Estructurar el reporte en HTML
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -59,11 +54,14 @@ def enviar_reporte_docente(correo_destino):
                 <tbody>
     """
     
-    # 5. Rellenar la tabla dinámicamente con los datos
+    # Lista para guardar los IDs de las tareas que estamos enviando
+    ids_enviados = []
+
     for t in tareas:
-        nombre = t[0]
-        # Formateamos la fecha si es un objeto datetime, si no, se imprime como viene
-        fecha_vence = t[1].strftime("%d/%m/%Y") if hasattr(t[1], 'strftime') else t[1] 
+        # Ahora t[0] es el ID, t[1] es el nombre y t[2] es la fecha
+        ids_enviados.append(t[0]) 
+        nombre = t[1]
+        fecha_vence = t[2].strftime("%d/%m/%Y") if hasattr(t[2], 'strftime') else t[2] 
         
         html_content += f"""
                     <tr>
@@ -72,7 +70,6 @@ def enviar_reporte_docente(correo_destino):
                     </tr>
         """
 
-    # Cerramos el HTML
     html_content += """
                 </tbody>
             </table>
@@ -86,16 +83,18 @@ def enviar_reporte_docente(correo_destino):
     </html>
     """
 
-    # Adjuntamos el HTML al mensaje
     msg.add_alternative(html_content, subtype='html')
     
-    # 6. Conectar al servidor y enviar
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(remitente, password) 
             smtp.send_message(msg)
             
         print("✅ Reporte enviado con éxito al correo del docente.")
+        
+        # ⚠️ AQUÍ ESTÁ LA MAGIA: Si el correo se envió sin errores, actualizamos la base de datos.
+        marcar_correo_enviado(ids_enviados)
+        
         return True
     except Exception as e:
         print(f"❌ Error al enviar el correo: {e}")
