@@ -128,7 +128,7 @@ def on_alumno_seleccionado(event, lista_alumnos, canvas, frame_contenido):
     
     if not tareas_pendientes:
         tk.Label(frame_contenido, text="✓ El alumno ha entregado todas las tareas", 
-                font=("Segoe UI", 13, "bold"), bg="#F5F1E8", fg="#2D4A3E").pack(pady=40)
+                 font=("Segoe UI", 13, "bold"), bg="#F5F1E8", fg="#2D4A3E").pack(pady=40)
         return
     
     hoy = date.today()
@@ -140,46 +140,65 @@ def on_alumno_seleccionado(event, lista_alumnos, canvas, frame_contenido):
         # Convertir fecha
         fecha_limite = fecha_vencimiento.date() if hasattr(fecha_vencimiento, 'date') else fecha_vencimiento
         
-        # Verificar si está vencida
-        if isinstance(fecha_limite, date):
-            esta_vencida = fecha_limite < hoy
-        else:
-            esta_vencida = False
+        # LÓGICA VISUAL CONDICIONAL (Vencida, A punto de vencer, A tiempo)
+        esta_vencida = False
+        por_vencer = False
         
-        color_acento = "#FF5252" if esta_vencida else "#96D1AA"
+        if isinstance(fecha_limite, date):
+            diferencia_dias = (fecha_limite - hoy).days
+            esta_vencida = diferencia_dias < 0
+            por_vencer = diferencia_dias == 0 or diferencia_dias == 1 # Vence hoy o mañana (<= 24h)
+        
+        # Asignar colores según el estado
+        if esta_vencida:
+            color_acento = "#FF5252"  # Rojo (Vencida)
+            bg_card = "#FFFFFF"
+            vence_color = "#C62828"
+            vence_icono = "⚠️"
+            texto_vence = f"{vence_icono} Vencida el: {fecha_limite}"
+        elif por_vencer:
+            color_acento = "#FFB300"  # Naranja/Amarillo (Menos de 24h)
+            bg_card = "#FFFDE7"       # Fondo ligeramente amarillo para resaltar toda la card
+            vence_color = "#E65100"
+            vence_icono = "⏳"
+            texto_vence = f"{vence_icono} ¡Vence pronto!: {fecha_limite}"
+        else:
+            color_acento = "#96D1AA"  # Verde (A tiempo)
+            bg_card = "#FFFFFF"
+            vence_color = "#555832"
+            vence_icono = "📅"
+            texto_vence = f"{vence_icono} Vence: {fecha_limite}"
         
         # ===== CARD =====
-        card = tk.Frame(frame_contenido, bg="#FFFFFF", highlightbackground="#E0DBCF", highlightthickness=1)
+        # Notar que aplicamos bg_card para que resalte si está por vencer
+        card = tk.Frame(frame_contenido, bg=bg_card, highlightbackground="#E0DBCF", highlightthickness=1)
         card.pack(fill="x", pady=10, padx=10)
         
         # Barra lateral de color
         tk.Frame(card, bg=color_acento, width=8).pack(side="left", fill="y")
         
         # Contenedor de información
-        info_container = tk.Frame(card, bg="#FFFFFF", padx=20, pady=15)
+        info_container = tk.Frame(card, bg=bg_card, padx=20, pady=15)
         info_container.pack(side="left", fill="both", expand=True)
         
         # Header del card
-        header_card = tk.Frame(info_container, bg="#FFFFFF")
+        header_card = tk.Frame(info_container, bg=bg_card)
         header_card.pack(fill="x", pady=(0, 8))
         
         tk.Label(header_card, text=nombre, font=("Segoe UI", 15, "bold"), 
-                bg="#FFFFFF", fg="#6D4145").pack(side="left")
+                 bg=bg_card, fg="#6D4145").pack(side="left")
         
         tk.Label(header_card, text=f"Puntos: {puntaje}", font=("Segoe UI", 10, "bold"), 
-                bg="#FFEFAE", fg="#555832", padx=10, pady=3).pack(side="right")
+                 bg="#FFEFAE", fg="#555832", padx=10, pady=3).pack(side="right")
         
         # Descripción
         if descripcion:
             tk.Label(info_container, text=descripcion, font=("Segoe UI", 10), 
-                    bg="#FFFFFF", fg="#555555", wraplength=700, justify="left").pack(anchor="w", pady=(0, 8))
+                     bg=bg_card, fg="#555555", wraplength=700, justify="left").pack(anchor="w", pady=(0, 8))
         
         # Footer con fecha
-        footer = tk.Frame(info_container, bg="#FFFFFF")
+        footer = tk.Frame(info_container, bg=bg_card)
         footer.pack(fill="x", pady=(8, 0))
         
-        vence_color = "#C62828" if esta_vencida else "#555832"
-        vence_icono = "⚠️" if esta_vencida else "📅"
-        
-        tk.Label(footer, text=f"{vence_icono} Vence: {fecha_limite}", 
-                font=("Segoe UI", 10, "bold"), bg="#FFFFFF", fg=vence_color).pack(side="left")
+        tk.Label(footer, text=texto_vence, font=("Segoe UI", 10, "bold"), 
+                 bg=bg_card, fg=vence_color).pack(side="left")
